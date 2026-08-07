@@ -8,13 +8,26 @@
 <style>
   :root {
     --bg: #111214; --surface: #18191c; --surface2: #1f2023;
-    --border: #2a2b2e; --accent: #5b6370;
+    --border: #2a2b2e;
     --green: #4a7c59; --text: #d1d3d8; --muted: #565a61; --white: #e8eaed;
+    /* ── BRAND ──
+       The therapy app's purple (its --c-bring), copied exactly. It is the one colour that drives
+       this design: chrome, focus, hover, active states, primary actions. Semantic colours stay
+       what they are (green answered, amber star, the stage colours), because those carry meaning
+       a brand colour would erase. */
+    --brand: #8b7fc0;
+    --brand-ink: #efeaff;                    /* text that sits ON the brand */
+    --accent: var(--brand);                  /* every focus ring and hover border follows it */
+    --tl: var(--brand);                      /* the timeline and the day log were already this */
   }
   :root[data-theme="light"] {
     --bg: #f6f7f9; --surface: #ffffff; --surface2: #eceff3;
-    --border: #d7dbe1; --accent: #6b7480;
+    --border: #d7dbe1;
     --green: #3f8a5b; --text: #23272e; --muted: #7b828c; --white: #10131a;
+    --brand: #6f5fa8;
+    --brand-ink: #ffffff;
+    --accent: var(--brand);
+    --tl: var(--brand);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
@@ -39,12 +52,17 @@
   .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
   .panel-head h2 { font-size: 15px; font-weight: 700; }
   .panel-head .ctx { font-size: 12px; color: var(--muted); font-weight: 500; }
-  .btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 7px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity .15s; }
-  .btn:hover { opacity: .82; }
-  .btn.secondary { background: var(--surface2); }
+  .btn { background: color-mix(in srgb, var(--brand) 22%, var(--surface2)); color: var(--white); border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border)); padding: 7px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity .15s; }
+  .btn:hover { background: color-mix(in srgb, var(--brand) 34%, var(--surface2)); border-color: var(--brand); opacity: 1; }
+  /* Secondary stays neutral: if everything is brand-coloured, nothing is. */
+  .btn.secondary { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .btn.secondary:hover { background: var(--surface2); border-color: var(--accent); }
 
   .icon-btn { background: none; border: none; cursor: pointer; padding: 2px 5px; border-radius: 5px; color: var(--muted); font-size: 13px; }
   .icon-btn:hover { background: var(--border); color: var(--text); }
+  /* Move-to-stage picker: the non-drag way out of the Saved backlog (touch has no HTML5 drag). */
+  .icon-btn.stage-btn { font-size: 12px; font-weight: 700; }
+  .icon-btn.stage-btn:hover { color: var(--accent); }
 
   /* ── STATUS PICKER POPOVER ── */
   .state-menu { position: absolute; z-index: 300; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.45); min-width: 132px; }
@@ -82,6 +100,12 @@
     .kcol-rejected:hover { width: 210px; min-width: 190px; opacity: 1; }
     .kcol-rejected:hover .kcol-body { display: flex; }
     .kcol-rejected:hover .kcol-head { writing-mode: horizontal-tb; transform: none; border-left: none; border-bottom: 2px solid var(--kc, var(--border)); padding: 3px 2px 7px; justify-content: space-between; }
+    /* :hover does not update while a native drag is in flight, so the strip would stay
+       collapsed and its (display:none) body could never be dropped on. Open it for the
+       whole drag instead - body.dragging-job is set in jobDragStart. */
+    body.dragging-job .kcol-rejected { width: 210px; min-width: 190px; opacity: 1; }
+    body.dragging-job .kcol-rejected .kcol-body { display: flex; }
+    body.dragging-job .kcol-rejected .kcol-head { writing-mode: horizontal-tb; transform: none; border-left: none; border-bottom: 2px solid var(--kc, var(--border)); padding: 3px 2px 7px; justify-content: space-between; }
   }
   /* On phones, let the board scroll sideways with readable columns. */
   @media (max-width: 680px) {
@@ -95,9 +119,21 @@
   .dragging { opacity: .4; }
   .saved-list.drop-hot { outline: 2px dashed var(--accent); outline-offset: -3px; background: rgba(91,99,112,.10); }
   .kcol-body.drop-hot { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
+  /* The column itself is a drop target too (header strip included), but only shows the
+     outline when the body is not already showing one. */
+  .kcol.drop-hot:not(:has(.kcol-body.drop-hot)) { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
   /* Saved: a simple draggable list below the board. */
   .saved-section { margin-top: 26px; }
   .saved-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+  /* Search the Saved backlog. Flat like the rest: a rule under the field, no filled box. */
+  .saved-search { display: flex; align-items: center; gap: 5px; border-bottom: 1px solid var(--border); padding: 1px 2px 2px; transition: border-color .15s; }
+  .saved-search:focus-within, .saved-search.on { border-bottom-color: var(--accent); }
+  .saved-search svg { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; }
+  .saved-search.on svg { color: var(--accent); }
+  .saved-search input { width: 132px; background: none; border: none; padding: 0; color: var(--text); font-size: 11.5px; font-weight: 600; text-transform: none; letter-spacing: 0; outline: none; }
+  .saved-search input::placeholder { color: var(--muted); font-weight: 500; }
+  .saved-search .ss-clear { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0 1px; }
+  .saved-search .ss-clear:hover { color: var(--text); }
   .saved-head-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; }
   .sort-lbl { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; }
   .saved-sort { width: auto; padding: 6px 8px; font-size: 12px; height: 32px; }
@@ -111,6 +147,72 @@
   .saved-list { display: flex; flex-direction: column; gap: 6px; min-height: 40px; padding: 0; }
   /* Backlog uses the same card as the kanban, stacked as a single-column list */
   .saved-cards { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── COMPANY CARD ──
+     One card per company on the Saved shelf: what you know about the company, then its
+     open roles as small job cards you drag straight onto the kanban. */
+  /* One column on purpose: the shelf is a list you read top to bottom, and multiple columns
+     made it a wall you had to scan in two directions. */
+  .saved-cards.co-grid { display: flex; flex-direction: column; gap: 8px; }
+  /* ── Importance tabs on the Saved shelf ── */
+  .pri-tabs { display: flex; gap: 6px; margin: 2px 0 9px; }
+  .pri-tab { background: none; border: 1px solid var(--border); color: var(--muted);
+             font: inherit; font-size: 11.5px; font-weight: 700; letter-spacing: .01em;
+             padding: 4px 12px; border-radius: 20px; cursor: pointer; display: inline-flex;
+             align-items: center; gap: 7px; transition: border-color .12s, color .12s; }
+  .pri-tab:hover { color: var(--text); border-color: #3a4553; }
+  .pri-tab .pt-n { font-size: 10px; font-weight: 800; opacity: .75; }
+  /* The active tab borrows the same muted importance colours the cards already use. */
+  .pri-tab.on { color: var(--white); border-color: currentColor; background: var(--surface); }
+  .pri-tab.on.p-high   { color: #b8a48c; }
+  .pri-tab.on.p-medium { color: #97977f; }
+  .pri-tab.on.p-low    { color: var(--text); }
+  /* A company is a heading with roles under it, not a card. Only the roles are boxes,
+     so the shelf reads as a list of jobs rather than a stack of grey panels. */
+  .co-card { background: none; border: none; border-radius: 0; padding: 4px 0 6px; }
+  .co-card + .co-card { border-top: 1px solid var(--border); }
+  .co-card.flagged .co-name { box-shadow: inset 3px 0 0 #d4a63a; padding-left: 7px; margin-left: -7px; }
+  .co-head { display: flex; align-items: baseline; gap: 8px; }
+  .co-name { font-size: 14px; font-weight: 800; color: var(--white); overflow-wrap: anywhere; cursor: pointer; }
+  .co-name:hover { text-decoration: underline; }
+  .co-count { font-size: 10.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .co-head-actions { margin-left: auto; display: flex; gap: 2px; }
+  .co-chips { display: flex; flex-wrap: wrap; gap: 4px 9px; margin-top: 4px; font-size: 10.5px; }
+  .co-chips .cc { color: var(--muted); white-space: nowrap; }
+  .co-chips .cc b { font-weight: 700; color: var(--text); }
+  .co-about { font-size: 11px; color: var(--muted); line-height: 1.45; margin-top: 6px;
+              display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .co-roles { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+  /* Each role: small, draggable, and it says the one thing you need (fit + importance). */
+  .co-role { display: flex; align-items: center; gap: 7px; background: var(--surface2);
+             border: 1px solid var(--border); border-radius: 7px; padding: 5px 7px; cursor: grab; }
+  .co-role:hover { border-color: var(--accent); }
+  .co-role:active { cursor: grabbing; }
+  .co-role.dragging { opacity: .5; }
+  .co-role .cr-grip { color: var(--muted); font-size: 11px; line-height: 1; flex-shrink: 0; }
+  .co-role .cr-title { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 600; color: var(--text);
+                       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .co-role .cr-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .co-role .cr-actions { display: flex; gap: 1px; flex-shrink: 0; }
+  .co-role .icon-btn { font-size: 12px; padding: 1px 3px; }
+  @media (hover: hover) {
+    .co-role .cr-actions { display: none; }
+    .co-role:hover .cr-actions { display: flex; }
+  }
+  .co-empty { font-size: 11px; color: var(--muted); font-style: italic; padding: 3px 1px; }
+  /* Where the thing you are dragging will land. */
+  .co-card { cursor: grab; }
+  .co-card:active { cursor: grabbing; }
+  .co-card.dragging { opacity: .45; }
+  .co-card.drop-before { box-shadow: -3px 0 0 var(--accent); }
+  .co-card.drop-after  { box-shadow: 3px 0 0 var(--accent); }
+  .co-role.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+  .co-role.drop-after  { box-shadow: 0 2px 0 var(--accent); }
+  .kcol .job-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
+  .kcol .job-card.drop-after  { box-shadow: 0 3px 0 var(--accent); }
+  /* The card is draggable, but the controls inside it still have to be clickable. */
+  .co-head-actions, .co-role .cr-meta, .co-role .cr-actions { cursor: default; }
+  .co-hint { font-size: 10.5px; color: var(--muted); margin: -4px 0 10px; }
   /* Backlog card footer: date/salary/reviews on the left, action buttons on the right, same line */
   .bc-footer { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
   .bc-footer .jc-datesal { margin-top: 0; }
@@ -162,6 +264,13 @@
     .kcol .job-card:hover .jc-notes { display: block; }
     .kcol .job-card:hover .jc-chips { display: flex; }
     .kcol .job-card:hover .jc-actions { display: flex; }
+    /* While a card is in flight, hover must NOT expand the card under the cursor: the
+       column would re-flow mid-drag and the drop would land on the neighbour you were
+       aiming past. Freeze every kanban card collapsed until the drag ends. */
+    body.dragging-job .kcol .job-card:hover .jc-contacts,
+    body.dragging-job .kcol .job-card:hover .jc-notes,
+    body.dragging-job .kcol .job-card:hover .jc-chips,
+    body.dragging-job .kcol .job-card:hover .jc-actions { display: none; }
   }
   .jc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .jc-co { font-weight: 700; font-size: 14px; color: var(--white); overflow-wrap: anywhere; }
@@ -183,6 +292,10 @@
   :root[data-theme="light"] .jc-chip.benefit { background: #e4f3e9; color: #2f7a4a; border-color: #bfe0cb; }
   :root[data-theme="light"] .jc-chip.salary { background: #eef3e2; color: #55702a; border-color: #d0dcb4; }
   .jc-actions { display: flex; gap: 2px; justify-content: flex-end; margin-top: 4px; }
+  /* Follow-up clock: days since the first message went out. Applied cards only,
+     always visible (never hidden with the hover actions). Turns amber at 7 days. */
+  .jc-follow { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; font-size: 10.5px; font-weight: 700; color: var(--muted); cursor: default; }
+  .jc-follow.due { color: #d8a24a; }
   .status-badge { display: inline-flex; align-items: center; padding: 0; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .15s; background: none; border: none; }
   .job-card .status-badge { margin: 6px 0 2px; }
   .status-badge:hover { opacity: .7; }
@@ -223,7 +336,6 @@
   .mp-skill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
   .mp-skill.have { background: #14241a; color: #6cc98a; border: 1px solid #22402c; }
   .mp-skill.gap  { background: #241a1a; color: #d09090; border: 1px solid #3a2626; }
-  .build-btn { font-weight: 700; color: #7fb0e0; }
   .desc-flag { font-size: 10px; opacity: .7; margin-left: 4px; }
   .jobs-head-actions { display: flex; gap: 8px; align-items: center; }
   .archived-row { opacity: .6; }
@@ -262,7 +374,234 @@
   .modal-bg.open { display: flex; }
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 460px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; }
   /* Job modal is wider (more columns fit) so it's shorter and fits the screen. */
-  #jobModalBg .modal { width: 760px; }
+  /* ── JOB CARD: TABS, SIZED TO THE WINDOW ──
+     Three tabs instead of one long scroll. Head and foot stay pinned; each pane is a
+     two-column grid built to fit, so no pane needs a scrollbar. Text is a notch smaller
+     inside the card than on the board, on purpose. */
+  #jobModalBg .modal { width: min(1180px, calc(100vw - 24px)); height: min(820px, calc(100vh - 24px));
+                       max-width: none; max-height: none; padding: 0; overflow: hidden;
+                       display: flex; flex-direction: column; font-size: 12px; }
+  #jobModalBg .jm-head { padding: 13px 20px 0; margin-bottom: 9px; }
+  #jobModalBg .jm-company { font-size: 17px; }
+  #jobModalBg .jm-role { font-size: 12.5px; }
+  .jm-tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .jm-tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+            padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--muted);
+            cursor: pointer; white-space: nowrap; }
+  .jm-tab:hover { color: var(--text); }
+  .jm-tab.on { color: var(--white); border-bottom-color: var(--accent); }
+  .jm-tab .tb-n { font-weight: 600; opacity: .6; margin-left: 5px; }
+  .jm-body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 20px 14px; }
+  /* Two columns, each scrolling on its own. The pane holds five stacked sections now
+     (description, fit and the CV on the left; the flow, the contacts and the notes on the
+     right) and no window is tall enough to show all of them at once. Scrolling the pane as
+     one block meant the flow dragged the description off-screen with it; scrolling each
+     column keeps both stories in view and keeps the pane itself at zero overflow. */
+  @media (min-width: 901px) {
+    .jm-body { overflow: hidden; }
+    .jm-pane.on { height: 100%; align-content: stretch; }
+    .jm-col { overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
+    .jm-col::-webkit-scrollbar { width: 5px; }
+    .jm-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  }
+  .jm-pane { display: none; }
+  .jm-pane.on { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-content: start; }
+  .jm-pane .jm-col { min-width: 0; }
+  .jm-body .jm-section { padding-top: 9px; margin-top: 10px; }
+  .jm-col > .jm-section:first-child { border-top: none; padding-top: 0; margin-top: 12px; }
+  .jm-body label { font-size: 10px; margin-bottom: 3px; }
+  .jm-body input, .jm-body select, .jm-body textarea { padding: 5px 8px; font-size: 12px; border-radius: 6px; }
+  .jm-body textarea { min-height: 40px; }
+  .jm-body .jm-sec-title { font-size: 11px; margin-bottom: 6px; }
+  .jm-foot { flex-shrink: 0; padding: 10px 20px; border-top: 1px solid var(--border); background: var(--surface); }
+  .jm-foot .modal-actions { margin-top: 0; }
+  /* How you got in: the method decides which field matters, so the hint says which. */
+  .reach-grid { display: grid; grid-template-columns: 1fr 118px; gap: 8px; }
+  .reach-note { font-size: 10.5px; color: var(--muted); margin-top: 5px; }
+
+  /* ── THE FLOW ────────────────────────────────────────────────────────────
+     How this application actually went: who you wrote to, who they handed you
+     to, and what you did in parallel. The STRIP is the picture (read-only, one
+     bubble per step, arrows between them, parallel steps stacked in the same
+     column). The ROWS under it are where you edit. The bubble colour is the
+     channel, so a referral can never be mistaken for a cold email. */
+  .proc-banner { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap;
+                 font-size: 11.5px; margin-bottom: 8px; }
+  .proc-state { font-weight: 800; }
+  .proc-state.wait   { color: #c79a4a; }
+  .proc-state.live   { color: #6fae8c; }
+  .proc-state.closed { color: var(--muted); }
+  .proc-state.none   { color: var(--muted); }
+  .proc-meta { color: var(--muted); }
+  .proc-meta b { color: var(--text); font-weight: 700; }
+  .proc-quiet { color: #c79a4a; font-weight: 700; }
+  /* The strip scrolls sideways rather than wrapping: a flow reads as one line. */
+  /* Capped: three things at once is realistic, and a taller column would push the
+     pane past the fold. Beyond that the strip scrolls rather than growing. */
+  .flow-strip { display: flex; align-items: center; overflow: auto; max-height: 96px; padding: 1px 0 5px; }
+  .flow-strip::-webkit-scrollbar { height: 5px; }
+  .flow-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .flow-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+  .flow-arrow { flex-shrink: 0; color: var(--muted); font-size: 11px; padding: 0 5px; }
+  .flow-bub { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+              font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px;
+              border: 1px solid currentColor; background: none; line-height: 1.4; }
+  .flow-bub .fb-who { color: var(--text); font-weight: 700; }
+  .flow-bub .fb-when { color: var(--muted); font-weight: 600; }
+  .flow-par-tag { font-size: 8.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+                  color: var(--muted); text-align: center; line-height: 1.2; }
+  .flow-empty { font-size: 11px; color: var(--muted); padding: 2px 0 6px; }
+
+  /* Action icons on the card footer. The icon IS the signal: no bars, no badges, just colour. */
+  .jc-foot { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .jc-foot .jc-follow { margin-left: auto; }
+  .jc-acts { display: flex; align-items: center; gap: 7px; }
+  .jc-act { display: inline-flex; line-height: 0; cursor: default; }
+  .jc-act svg { width: 15px; height: 15px; }
+  .jc-act.sent { color: #5b8dc0; }   /* out, still early */
+  .jc-act.got  { color: #5fbf80; }   /* they answered */
+  .jc-act.warn { color: #c98b3a; }   /* 10 days, nudge them */
+  .jc-act.late { color: #c0503f; }   /* 15 days, last call */
+  .jc-act.dead { color: #14161a; }   /* 18 days, gone */
+  :root[data-theme="light"] .jc-act.dead { color: #0a0b0d; }
+
+  /* ── The day log, above the board ── */
+  /* Same breathing room the Saved shelf gets below the board, so the log is its own block
+     rather than a lid sitting on the kanban. */
+  .daylog { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+            padding: 9px 12px 10px; margin-bottom: 26px; }
+  .dl-head { font-size: 12px; font-weight: 700; color: var(--white); display: flex;
+             align-items: baseline; gap: 8px; margin-bottom: 7px; }
+  .dl-hint { font-size: 10.5px; font-weight: 600; color: var(--muted); margin-left: auto; }
+  .dl-day { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: baseline;
+            padding: 3px 0; }
+  .dl-day + .dl-day { border-top: 1px solid var(--border); }
+  .dl-when { font-size: 10.5px; font-weight: 800; color: var(--tl); white-space: nowrap; }
+  .dl-items { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+  .dl-chip { display: inline-flex; align-items: baseline; gap: 5px; cursor: pointer;
+             font-size: 10.5px; padding: 2px 8px; border-radius: 20px;
+             border: 1px solid currentColor; line-height: 1.45; }
+  .dl-chip b { color: var(--text); font-weight: 700; }
+  .dl-chip:hover { background: var(--surface2); }
+  /* The colour says what KIND of move it was, so a day reads at a glance. */
+  .dl-chip.m-sent  { color: #5b8dc0; }   /* an email or message you sent */
+  .dl-chip.m-apply { color: var(--brand); }   /* applied on their site */
+  .dl-chip.m-call  { color: #c0704f; }   /* a call or an interview */
+  .dl-chip.m-in    { color: #5fbf80; }   /* they came to you, or answered */
+
+  /* ── The CV, dropped onto the role (job card, left column) ── */
+  .cv-zone .cvz-empty { display: flex; flex-direction: column; align-items: center; gap: 2px;
+                        border: 1px dashed var(--border); border-radius: 9px; padding: 12px 10px;
+                        font-size: 11.5px; color: var(--muted); text-align: center; cursor: pointer;
+                        transition: border-color .12s, color .12s; }
+  .cv-zone .cvz-empty:hover { border-color: var(--accent); color: var(--text); }
+  .cv-zone .cvz-empty u { text-underline-offset: 2px; }
+  .cv-zone.hot .cvz-empty, .cv-zone.hot .cvz-file { border-color: var(--green); border-style: dashed;
+                        background: color-mix(in srgb, var(--green) 12%, transparent); }
+  .cv-zone .cvz-ic { font-size: 15px; }
+  .cv-zone .cvz-or { opacity: .7; }
+  .cv-zone .cvz-sub { display: block; font-size: 10px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+  .cv-zone .cvz-file { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border);
+                       border-radius: 9px; padding: 9px 10px; background: var(--surface2); }
+  .cv-zone .cvz-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: var(--text);
+                       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cv-zone .cvz-name .cvz-sub { white-space: normal; font-weight: 600; }
+  .cv-zone .cvz-acts { display: flex; gap: 2px; flex-shrink: 0; }
+
+  /* ── Contacts (job card, right column) ── */
+  .ct-rows { display: flex; flex-direction: column; gap: 3px; }
+  /* One line per contact: star, name, title. The description is not drawn unless you hover
+     (read) or click the name (write), which is what took a contact from three lines to one. */
+  .ct-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 2px 4px; align-items: center;
+            padding: 2px 4px 3px; border: 1px solid transparent; border-radius: 7px; }
+  .ct-row.main { border-color: var(--border); background: var(--surface2); }
+  .ct-row.open { border-color: color-mix(in srgb, var(--tl) 55%, transparent); background: var(--surface2); }
+  .ct-row .ct-name, .ct-row .ct-title { padding: 3px 6px !important; font-size: 11.5px !important; }
+  .ct-row .ct-name { background: none; border-color: transparent; font-weight: 600; }
+  .ct-row.has-info .ct-name { text-decoration: underline; text-decoration-style: dotted;
+                              text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .ct-row .ct-name:hover, .ct-row .ct-name:focus { border-color: var(--border); }
+  .ct-row .ct-title { background: none; border-color: transparent; color: var(--muted); }
+  .ct-row .ct-title:hover, .ct-row .ct-title:focus { border-color: var(--border); color: var(--text); }
+  /* Collapsed description: hidden, and revealed by hovering the row. */
+  .ct-read { grid-column: 2 / -1; display: none; font-size: 11px; color: var(--muted);
+             line-height: 1.4; padding: 0 6px 2px; }
+  .ct-row:hover .ct-read { display: block; }
+  .ct-row .ct-info { grid-column: 2 / -1; resize: vertical; min-height: 44px; font-size: 11.5px; line-height: 1.4; }
+  .ct-star { grid-row: 1; background: none; border: none; cursor: pointer; font-size: 13px;
+             color: var(--muted); padding: 0 2px; line-height: 1; }
+  .ct-star:hover { color: var(--text); }
+  .ct-star.on { color: #d4a63a; }
+
+  /* ── The step organiser (job card, "How this one is going") ──
+     A note and a date per step, filed by date. Purple is borrowed from the therapy app,
+     where it means "something worth remembering". */
+  .tl { display: flex; flex-direction: column; }
+  .tl-item { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+  .tl-rail { position: relative; display: flex; justify-content: center; }
+  /* The line that makes it a history rather than a list: drawn between the dots, not after
+     the last one. Newest sits on top, so the rail runs from now back into the past. */
+  .tl-item:not(:last-child) .tl-rail::after {
+    content: ''; position: absolute; top: 20px; bottom: -2px; width: 1px;
+    background: color-mix(in srgb, var(--tl) 45%, transparent);
+  }
+  .tl-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 10px; flex-shrink: 0; z-index: 1;
+            background: color-mix(in srgb, var(--tl) 18%, var(--surface));
+            border: 1px solid color-mix(in srgb, var(--tl) 55%, transparent); }
+  /* Collapsed a step is one line: its title and its date. That is what keeps a long history
+     short enough to read whole, with no scrollbar anywhere. */
+  .tl-bub { flex: 1; min-width: 0; margin-bottom: 5px; padding: 5px 8px 6px; border-radius: 9px; cursor: pointer;
+            background: color-mix(in srgb, var(--tl) 8%, var(--surface2));
+            border: 1px solid color-mix(in srgb, var(--tl) 28%, var(--border)); }
+  .tl-bub:hover { border-color: color-mix(in srgb, var(--tl) 55%, transparent); }
+  .tl-item.open .tl-bub { cursor: default; background: color-mix(in srgb, var(--tl) 12%, var(--surface2));
+            border-color: color-mix(in srgb, var(--tl) 60%, transparent); }
+  .tl-head { display: flex; align-items: baseline; gap: 8px; }
+  .tl-title { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 700; color: var(--text);
+              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-when { font-size: 10px; font-weight: 800; color: var(--tl); white-space: nowrap; }
+  /* The note, read-only until you click: one line at rest, all of it on hover. Never scrolls,
+     never clips what you came to read. */
+  .tl-read { margin-top: 2px; font-size: 11px; color: var(--muted); line-height: 1.4;
+             display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .tl-item:hover .tl-read { -webkit-line-clamp: unset; overflow: visible; color: var(--text); }
+  /* Open: the whole step, editable. One at a time. */
+  .tl-edit { display: grid; grid-template-columns: 1fr 118px auto auto; gap: 4px; align-items: center; margin-top: 5px; cursor: default; }
+  .tl-edit .tl-note { grid-column: 1 / -1; }
+  .tl-lbl { font-size: 11.5px !important; font-weight: 600; }
+  .tl-date { padding: 3px 5px !important; font-size: 10.5px !important; color: var(--muted); }
+  .tl-date.bad { border-color: #c0704f; color: #c0704f; }   /* half-typed or impossible date */
+  .tl-kind { width: auto; max-width: 150px; padding: 3px 5px !important; font-size: 10.5px !important; color: var(--muted); }
+  .tl-note { min-height: 54px !important; resize: vertical; line-height: 1.45; }
+  .tl-note:focus { border-color: color-mix(in srgb, var(--tl) 60%, transparent); }
+  /* The editor. Long journeys scroll inside the section instead of pushing the
+     pane past the fold, the same trick the trip planner uses for its day list. */
+  /* The strip above already shows the whole journey, so the editor only has to show a
+     couple of rows at a time: it scrolls instead of pushing the pane past the fold. */
+  /* The row editor (drag handle, parallel toggle, 7-column grid) was replaced on 2026-08-05
+     by the step organiser above: a note and a date per step, filed by date. */
+  /* Channel colours, in the same muted register as the status badges. */
+  .k-site     { color: #7f95b5; }
+  .k-cold     { color: #c79a4a; }
+  .k-referral { color: #6fae8c; }
+  .k-inbound  { color: #a98ac2; }
+  .k-contact  { color: #8a909a; }
+  .k-reply    { color: #7fb0a0; }
+  .k-followup { color: #a9a06a; }
+  .k-screen   { color: #8fa8c9; }
+  .k-interview{ color: #b58fc9; }
+  /* Interviews tab: exactly two people, so each gets a labelled slot, not a list row. */
+  .iv-slot { margin-bottom: 10px; }
+  .iv-slot .iv-who { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .iv-slot .iv-role { font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+                      letter-spacing: .04em; margin-bottom: 5px; }
+  .iv-slot.hr .iv-role { color: #8fa8c9; }
+  .iv-slot.hm .iv-role { color: #b58fc9; }
+  .iv-slot .iv-info { margin-top: 7px; }
+  #jobModalBg .match-panel { max-height: 168px; overflow-y: auto; }
+  #jobModalBg #f-desc { min-height: 148px; }
+  @media (max-width: 900px) { .jm-pane.on { grid-template-columns: 1fr; } }
   .modal h3 { font-size: 16px; margin-bottom: 18px; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-full { grid-column: 1/-1; }
@@ -340,16 +679,9 @@
   .tag-chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #1e2632; color: #9db4d6; border: 1px solid #2c3646; }
   .jm-addbtn { background: none; border: 1px dashed var(--border); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; margin-top: 4px; }
   .jm-addbtn:hover { color: var(--text); border-color: var(--accent); }
-  .person-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; padding: 6px; border: 1px solid transparent; border-radius: 9px; }
-  .person-row .pr-info { grid-column: 1 / -1; min-height: 40px; }
-  .person-row.drop-hot { border-color: var(--accent); border-style: dashed; }
-  .pr-drag { cursor: grab; color: var(--muted); font-size: 14px; line-height: 1; user-select: none; padding: 2px; }
-  .pr-drag:active { cursor: grabbing; }
-  .pr-principal-tag { grid-column: 1 / -1; font-size: 12px; line-height: 1; color: #d4a63a; }
   .rev-chip { font-size: 10px; font-weight: 800; white-space: nowrap; }
   .rev-chip.gd  { color: #3ea15a; }
   .rev-chip.ind { color: #6b93e0; }
-  .pr-info-disp { color: var(--muted); font-weight: 400; }
   /* Card header right-stack: importance on top, fit % below */
   .jc-head-left { flex: 1; min-width: 0; }
   .jc-rank { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; margin-left: auto; flex-shrink: 0; text-align: right; }
@@ -366,32 +698,87 @@
 
   /* ── EXPERIENCE INVENTORY ──
      Same flat language as the job board: colored text labels, one tinted box per item. */
-  .inv-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-  .inv-intro { flex: 1; min-width: 220px; font-size: 12px; color: var(--muted); line-height: 1.55; }
-  .inv-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .inv-search { width: 220px; padding: 7px 10px; font-size: 12px; }
-  .inv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-  .inv-filter { background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; padding: 3px 2px; border-bottom: 2px solid transparent; }
-  .inv-filter:hover { color: var(--text); }
-  .inv-filter.on { color: var(--white); border-bottom-color: var(--white); }
-  .inv-list { display: flex; flex-direction: column; gap: 8px; }
-  .exp-card { background: var(--surface); border-radius: 6px; padding: 11px 12px; cursor: pointer; }
-  .exp-card:hover { background: var(--surface2); }
-  .exp-card.star { box-shadow: inset 2px 0 0 #d4a63a; }
-  .exp-top { display: flex; align-items: flex-start; gap: 10px; }
-  .exp-title { font-weight: 700; font-size: 13.5px; color: var(--white); flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .exp-when { font-size: 10px; font-weight: 700; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
-  .exp-org { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .exp-result { font-size: 12px; color: var(--text); margin-top: 6px; line-height: 1.5; }
-  .exp-metric { color: #6cc98a; font-weight: 700; }
-  .exp-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-  .exp-actions { display: flex; gap: 2px; justify-content: flex-end; margin-top: 4px; }
-  @media (hover: hover) {
-    .exp-card .exp-actions { opacity: 0; transition: opacity .12s; }
-    .exp-card:hover .exp-actions { opacity: 1; }
-  }
-  .inv-empty { color: var(--muted); font-size: 12px; font-style: italic; padding: 22px 4px; text-align: center; }
-  .inv-count { color: var(--muted); font-size: 11px; font-weight: 700; }
+  .inv-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .inv-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+  /* ── The brief: what he is looking for and how to work this page ── */
+  .inv-guide { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+               padding: 9px 14px 10px; margin-bottom: 14px; }
+  .inv-guide summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+                       font-size: 12px; font-weight: 700; color: var(--white); }
+  .inv-guide summary::-webkit-details-marker { display: none; }
+  .ig-arrow { width: 0; height: 0; border-left: 5px solid var(--muted);
+              border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+              transition: transform .15s; }
+  .inv-guide[open] .ig-arrow { transform: rotate(90deg); }
+  .ig-body { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 26px; margin-top: 9px; }
+  .ig-col h4 { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+               color: var(--tl); margin-bottom: 5px; }
+  .ig-col ul { margin: 0; padding-left: 15px; }
+  .ig-col li { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-bottom: 3px; }
+  .ig-col li b { color: var(--text); font-weight: 700; }
+  @media (max-width: 860px) { .ig-body { grid-template-columns: 1fr; } }
+
+  /* ── The log: one row per thing you did ── */
+  /* The search field: flat, brand focus, same rhythm as the filter chips. */
+  .inv-search { background: var(--surface); border: 1px solid var(--border); color: var(--text);
+                border-radius: 20px; padding: 5px 13px; font-size: 12px; min-width: 210px; }
+  .inv-search::placeholder { color: var(--muted); }
+  .inv-search:focus { outline: none; border-color: var(--brand); }
+
+  /* ── The filter bar ── */
+  .inv-filters { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .frow { display: grid; grid-template-columns: 62px 1fr; gap: 8px; align-items: center; }
+  .frow-lbl { font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+              color: var(--muted); text-align: right; }
+  /* One scrollable line per facet: the list never wraps into a wall you have to read. */
+  .frow-chips { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+  .frow-chips::-webkit-scrollbar { height: 4px; }
+  .frow-chips::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .inv-filter { flex: 0 0 auto; background: none; border: 1px solid var(--border); color: var(--muted);
+                font: inherit; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+                cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .inv-filter:hover { color: var(--text); border-color: #3a4553; }
+  .inv-filter.on { color: var(--white); border-color: var(--tl); background: color-mix(in srgb, var(--tl) 14%, transparent); }
+  .inv-count { font-size: 9.5px; font-weight: 800; opacity: .7; }
+  .star-filter.on { color: #d4a63a; border-color: #d4a63a; background: color-mix(in srgb, #d4a63a 12%, transparent); }
+  /* What is switched on, and how to switch it off. */
+  .inv-active { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 3px;
+                padding-top: 7px; border-top: 1px solid var(--border); }
+  .ia-lbl { font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .fchip { background: color-mix(in srgb, var(--tl) 16%, transparent); border: 1px solid var(--tl);
+           color: var(--white); font: inherit; font-size: 11px; font-weight: 700; padding: 3px 9px;
+           border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .fchip .fx { font-size: 13px; line-height: 1; opacity: .8; }
+  .fchip:hover .fx { opacity: 1; }
+  .fclear { background: none; border: none; color: var(--muted); font: inherit; font-size: 11px;
+            font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .fclear:hover { color: var(--text); }
+  .inv-count-lbl { font-size: 11.5px; font-weight: 700; color: var(--muted); margin-left: 10px; }
+  .link-btn { background: none; border: none; color: var(--tl); font: inherit; font-size: inherit;
+              cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
+
+  /* ── The log: one row per thing you did ── */
+  .inv-list { display: flex; flex-direction: column; }
+  .exp-row { display: grid; grid-template-columns: 116px 1fr auto; gap: 4px 12px; align-items: baseline;
+             padding: 9px 4px 10px; border-top: 1px solid var(--border); cursor: pointer; }
+  .exp-row:first-child { border-top: none; }
+  .exp-row:hover { background: var(--surface); }
+  .exp-row.star .exp-title { box-shadow: inset 3px 0 0 #d4a63a; padding-left: 8px; margin-left: -8px; }
+  .exp-date { font-size: 10.5px; font-weight: 800; color: var(--tl); white-space: nowrap; }
+  .exp-main { min-width: 0; }
+  .exp-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  .exp-title { font-size: 13px; font-weight: 700; color: var(--white); }
+  /* The number is what a reader scans for, so it sits on the title line, not buried in the prose. */
+  .exp-metric { font-size: 10.5px; font-weight: 800; color: #5fbf80; white-space: nowrap; }
+  .exp-co { font-size: 10px; font-weight: 700; color: var(--tl); border: 1px solid currentColor;
+            border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+  .exp-role { font-size: 11px; color: var(--muted); }
+  .exp-desc { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 3px; }
+  .exp-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .exp-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+  .exp-row:hover .exp-actions { opacity: 1; }
+  .inv-empty { font-size: 12px; color: var(--muted); padding: 18px 4px; }
   #expModalBg .modal { width: 680px; }
   .star-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 580px) { .star-grid { grid-template-columns: 1fr; } }
@@ -481,7 +868,8 @@
   .side-btn .si { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .side-btn .si svg { width: 19px; height: 19px; display: block; }
   .side-btn:hover { background: var(--surface2); color: var(--text); }
-  .side-btn.active { color: var(--white); background: var(--surface2); }
+  .side-btn.active { color: var(--white); background: color-mix(in srgb, var(--brand) 20%, var(--surface2));
+                     box-shadow: inset 2px 0 0 var(--brand); }
   main.content { flex: 1; min-width: 0; max-width: none; margin: 0; padding: 20px 24px; }
   /* Settings popover (bottom-left) — minimalist, no icons, aligned text */
   .settings-menu { position: fixed; left: 62px; bottom: 14px; z-index: 60; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px; min-width: 172px; box-shadow: 0 12px 40px rgba(0,0,0,.42); display: flex; flex-direction: column; gap: 1px; font-family: inherit; }
@@ -542,15 +930,40 @@
 
 
 <div class="view" id="view-inventory">
-  <div class="content-head"><h1 class="app-title">Experience Inventory</h1></div>
-  <div class="inv-head">
-    <div class="inv-intro">
-      Everything you have actually done, written once and reused: CV bullets, cover letters,
-      application questions, interview answers. One card per experience, in STAR form, tagged by
-      the skills it proves.
+  <div class="content-head"><h1 class="app-title">Experience Inventory</h1><span class="inv-count-lbl" id="invCount"></span></div>
+  <details class="inv-guide" id="invGuide" ontoggle="rememberGuide(this)">
+    <summary><span class="ig-arrow"></span>What I am looking for, and how to use this</summary>
+    <div class="ig-body">
+      <div class="ig-col">
+        <h4>What I am looking for</h4>
+        <ul>
+          <li><b>Product management</b>: hardware or manufacturing technology, technical product
+              owner, industrial or PLM software.</li>
+          <li><b>Montr&#233;al</b>, hybrid or remote. Not a fully on-site contract.</li>
+          <li>Where my record is strongest: owning a product end to end, suppliers and field
+              failures, regulated or certified hardware, and teams that need a translator between
+              engineering and the business.</li>
+        </ul>
+      </div>
+      <div class="ig-col">
+        <h4>How to use this page</h4>
+        <ul>
+          <li><b>One entry per thing you actually did.</b> Not a job, a thing: a launch, a fix, a
+              decision, a number you moved.</li>
+          <li><b>Write the result first</b>, with the number in it. "Cut supplier-data processing
+              95% with a VBA tool" beats "improved workflows".</li>
+          <li><b>Tag it with the company</b> and the skills it proves, so a CV bullet or an
+              interview answer is a search away.</li>
+          <li>Star the strongest ones. Those are the stories you tell first.</li>
+        </ul>
+      </div>
     </div>
+  </details>
+
+  <div class="inv-head">
     <div class="inv-tools">
       <input class="inv-search" id="inv-q" type="search" placeholder="Search experiences…" oninput="buildInventory()">
+      <button class="cv-master-btn" onclick="openMasterCV()" title="Master CV"><span class="cv-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></span><span class="cv-lbl">Master CV</span></button>
       <button class="btn" onclick="openExpModal()">+ Experience</button>
     </div>
   </div>
@@ -571,9 +984,9 @@
   <input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="restoreBackup(this.files[0]); this.value=''">
 </div>
 
-<!-- Job modal -->
+<!-- Job modal: three tabs (General / Company / Interviews), sized to the window -->
 <div class="modal-bg" id="jobModalBg">
-  <div class="modal modal-job">
+  <div class="modal modal-job" onclick="jobModalClick(event)">
     <div class="jm-head">
       <div class="jm-title">
         <input class="jm-company" id="f-company" placeholder="Company" oninput="refreshCvFileHint()">
@@ -582,82 +995,159 @@
       <div class="jm-fitbig" id="f-fitbig"></div>
     </div>
 
-    <div class="jm-meta-row">
-      <div><label>Status</label>
-        <select id="f-status">
-          <option value="Saved">Saved</option>
-          <option value="Applied">Applied</option>
-          <option value="Waiting 1st interview">Waiting 1st interview</option>
-          <option value="Waiting 1st result">Waiting 1st result</option>
-          <option value="Waiting 2nd interview">Waiting 2nd interview</option>
-          <option value="Waiting 2nd result">Waiting 2nd result</option>
-          <option value="Offer">Offer</option>
-          <option value="Rejected">Rejected</option>
-        </select>
+    <div class="jm-tabs">
+      <button type="button" class="jm-tab on" id="tab-general" onclick="showJobTab('general')">General</button>
+      <button type="button" class="jm-tab" id="tab-company" onclick="showJobTab('company')">Company</button>
+      <button type="button" class="jm-tab" id="tab-people" onclick="showJobTab('people')">Interviews<span class="tb-n" id="tab-people-n"></span></button>
+    </div>
+
+    <div class="jm-body">
+
+      <!-- ── GENERAL: the role, how you got in, the description and the fit ── -->
+      <div class="jm-pane on" id="pane-general">
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-meta-row">
+              <div><label>Status</label>
+                <select id="f-status">
+                  <option value="Saved">Saved</option>
+                  <option value="Applied">Applied</option>
+                  <option value="Waiting 1st interview">Waiting 1st interview</option>
+                  <option value="Waiting 1st result">Waiting 1st result</option>
+                  <option value="Waiting 2nd interview">Waiting 2nd interview</option>
+                  <option value="Waiting 2nd result">Waiting 2nd result</option>
+                  <option value="Offer">Offer</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div><label>Importance</label><select id="f-priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
+              <div><label>Posted</label><input id="f-dateposted" type="date"></div>
+              <div><label>Job link</label><input id="f-url" placeholder="https://..."></div>
+            </div>
+          </div>
+
+          <div class="jm-section">
+            <div class="jm-sec-title">📄 Job description <span class="jm-hint">- paste it to tailor the CV and score the fit</span></div>
+            <textarea id="f-desc" rows="8" placeholder="Paste the full posting here..." oninput="refreshMatch()"></textarea>
+          </div>
+
+          <div class="jm-section">
+            <div class="jm-sec-title">🧭 Fit vs your master CV</div>
+            <div id="f-match"></div>
+          </div>
+
+          <!-- The CV lives with the role, not as a link you have to maintain: drop the file
+               here and it is stored on the card (and syncs), downloadable from anywhere. -->
+          <div class="jm-section">
+            <div class="jm-sec-title">📎 CV for this role</div>
+            <div class="cv-zone" id="f-cvzone"
+                 ondragover="cvZoneDragOver(event)" ondragleave="cvZoneDragLeave(event)" ondrop="cvZoneDrop(event)"></div>
+          </div>
+
+          <div class="jm-section">
+            <div class="jm-sec-title">📝 Notes</div>
+            <textarea id="f-notes" rows="3" placeholder="Anything worth remembering about this role"></textarea>
+          </div>
+
+        </div>
+
+        <!-- Right: the story of this application. What happened, who it happened with,
+             and anything else worth remembering. -->
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-sec-title">🧭 How this one is going <span class="jm-hint">- a note and a date, in order</span></div>
+            <div class="proc-banner" id="f-proc"></div>
+            <div class="tl" id="f-flowtimeline"></div>
+            <button type="button" class="jm-addbtn" onclick="addStep()">+ Step</button>
+            <label style="margin-top:7px">Application link</label>
+            <input id="f-applyurl" placeholder="https://... the page you actually applied on">
+            <div class="reach-note" id="f-reach-note"></div>
+          </div>
+
+          <div class="jm-section">
+            <div class="jm-sec-title">👥 Contacts <span class="jm-hint">- click a star to set the main one</span></div>
+            <div class="ct-rows" id="f-contacts"></div>
+            <button type="button" class="jm-addbtn" onclick="addContact()">+ Contact</button>
+          </div>
+
+        </div>
       </div>
-      <div><label>Priority</label><select id="f-priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
-      <div><label>Posted</label><input id="f-dateposted" type="date"></div>
-      <div><label>Job link</label><input id="f-url" placeholder="https://..."></div>
-    </div>
 
-    <div class="jm-section">
-      <details class="jm-details" id="f-desc-details">
-        <summary class="jm-sec-title">📄 Job description <span class="jm-hint">— paste it to tailor the CV &amp; score fit</span></summary>
-        <textarea id="f-desc" rows="7" placeholder="Paste the full posting here..." oninput="refreshMatch()"></textarea>
-      </details>
-    </div>
-
-    <div class="jm-section">
-      <div class="jm-sec-title">🧭 Fit vs your master CV</div>
-      <div id="f-match"></div>
-    </div>
-
-    <div class="jm-section">
-      <div class="jm-sec-title">🏢 Company — about, history &amp; news</div>
-      <label>About</label><textarea id="f-about" rows="2" placeholder="What the company does, product, size, market..."></textarea>
-      <label style="margin-top:10px">History</label><textarea id="f-history" rows="2" placeholder="Founded, milestones, ownership, funding..."></textarea>
-      <label style="margin-top:10px">News</label><textarea id="f-news" rows="2" placeholder="Recent launches, funding, layoffs, press..."></textarea>
-      <div class="jm-grid3" style="margin-top:12px">
-        <div><label>💲 Expected salary</label><input id="f-salary" placeholder="120–160K CAD"></div>
-        <div><label>🟢 Glassdoor</label><input id="f-glassdoor" placeholder="3.8★ · link"></div>
-        <div><label>🔵 Indeed</label><input id="f-indeed" placeholder="3.6★ · link"></div>
+      <!-- ── COMPANY: shared by every role you track at this company ── -->
+      <div class="jm-pane" id="pane-company">
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-sec-title">🏢 About <span class="jm-hint" id="f-co-shared"></span></div>
+            <textarea id="f-about" rows="4" placeholder="What the company does, product, size, market..."></textarea>
+            <label style="margin-top:8px">History</label>
+            <textarea id="f-history" rows="3" placeholder="Founded, milestones, ownership, funding..."></textarea>
+          </div>
+        </div>
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-sec-title">📰 News</div>
+            <textarea id="f-news" rows="3" placeholder="Recent launches, funding, layoffs, press..."></textarea>
+          </div>
+          <div class="jm-section">
+            <div class="jm-sec-title">💲 Pay &amp; reputation</div>
+            <label>Expected salary</label><input id="f-salary" placeholder="120-160K CAD">
+            <div class="jm-grid2" style="margin-top:8px">
+              <div><label>🟢 Glassdoor</label><input id="f-glassdoor" placeholder="3.8 stars · link"></div>
+              <div><label>🔵 Indeed</label><input id="f-indeed" placeholder="3.6 stars · link"></div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="jm-section">
-      <div class="jm-sec-title">👤 People</div>
-      <div class="jm-hint" style="margin:-4px 0 8px">Hiring manager, recruiter, headhunter… name, title and any relevant info for each.</div>
-      <div id="f-people"></div>
-      <button type="button" class="jm-addbtn" onclick="addPerson()">+ Add person</button>
-    </div>
-
-    <div class="jm-section">
-      <div class="jm-sec-title">🎤 Interview prep</div>
-      <label>Points in common — tags, comma separated</label>
-      <input id="f-common" placeholder="ÉTS, mécanique, same company, EV, bilingue" oninput="refreshTags()">
-      <div class="tagprev" id="f-common-tags"></div>
-      <label style="margin-top:10px">What they value / appreciated</label>
-      <textarea id="f-values" rows="2" placeholder="What the company or interviewer cares about; praise they gave..."></textarea>
-      <label style="margin-top:10px">Key talking points &amp; questions to ask</label>
-      <textarea id="f-keynotes" rows="2" placeholder="My angle, stories to tell, questions for them..."></textarea>
-    </div>
-
-    <div class="jm-section">
-      <div class="jm-sec-title">📝 Notes</div>
-      <textarea id="f-notes" rows="2" placeholder="Short note"></textarea>
-    </div>
-
-    <div class="jm-section">
-      <div class="jm-grid2">
-        <div><label>Built CV link</label><input id="f-cvurl" placeholder="https://... exported PDF"></div>
-        <div class="cv-file-hint">CV file: <code id="f-cvfile">cv/…</code></div>
+      <!-- ── INTERVIEWS: who you meet and what to say ── -->
+      <div class="jm-pane" id="pane-people">
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-sec-title">🎤 Who is in the room</div>
+            <div class="jm-hint" style="margin:-2px 0 9px">Only the two that matter on the day. Everyone else you talked to lives in the flow on the General tab.</div>
+            <div class="iv-slot hr">
+              <div class="iv-role">🧑‍💼 HR / recruiter interviewing you</div>
+              <div class="iv-who">
+                <input id="f-hr-name" list="f-flownames" placeholder="Name" oninput="refreshTabCounts()">
+                <input id="f-hr-title" placeholder="Title">
+              </div>
+              <textarea class="iv-info" id="f-hr-info" rows="2" placeholder="Where they came from, what they screen for, what you already told them…"></textarea>
+            </div>
+            <div class="iv-slot hm">
+              <div class="iv-role">🧭 Hiring manager</div>
+              <div class="iv-who">
+                <input id="f-hm-name" list="f-flownames" placeholder="Name" oninput="refreshTabCounts()">
+                <input id="f-hm-title" placeholder="Title">
+              </div>
+              <textarea class="iv-info" id="f-hm-info" rows="2" placeholder="Their team, their problem, what they will judge you on…"></textarea>
+            </div>
+            <datalist id="f-flownames"></datalist>
+          </div>
+        </div>
+        <div class="jm-col">
+          <div class="jm-section">
+            <div class="jm-sec-title">🤝 Points in common <span class="jm-hint">- comma separated</span></div>
+            <input id="f-common" placeholder="ÉTS, mécanique, same company, EV, bilingue" oninput="refreshTags()">
+            <div class="tagprev" id="f-common-tags"></div>
+          </div>
+          <div class="jm-section">
+            <div class="jm-sec-title">💬 What they value</div>
+            <textarea id="f-values" rows="3" placeholder="What the company or interviewer cares about; praise they gave..."></textarea>
+          </div>
+          <div class="jm-section">
+            <div class="jm-sec-title">🎤 Talking points &amp; questions to ask</div>
+            <textarea id="f-keynotes" rows="4" placeholder="My angle, stories to tell, questions for them..."></textarea>
+          </div>
+        </div>
       </div>
+
     </div>
 
-    <div class="modal-actions">
-      <button class="btn secondary" onclick="closeJobModal()">Cancel</button>
-      <button class="btn secondary" onclick="buildCvFromModal()" title="Copy a build prompt (master CV + this description) to paste to Claude">⚙ Build CV</button>
-      <button class="btn" onclick="saveJob()">Save</button>
+    <div class="jm-foot">
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeJobModal()" title="Saves and closes">Close</button>
+        <button class="btn" onclick="saveJob()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -907,7 +1397,7 @@ const INITIAL_JOBS = [
     url:'', datePosted:'2026-07-17',
     notes:'Montreal, QC (Hybrid). A second Northwind role - folds under one company card in the Saved log (see the Hidden drawer). Flag a role to choose which one shows.' },
 ];
-const SEED = 'v20';
+const SEED = 'v25';
 
 // ═══════════════════════════════════════════════════════════════
 // ENGINE
@@ -933,7 +1423,6 @@ function cvFilePath(j) { return 'cv/' + jobSlug(j) + '.md'; }
 let jobs = [], nextJobId = 1;
 let experiences = [], nextExpId = 1;   // Experience Inventory (its own page)
 let editingJob = null;
-let modalPeople = [];   // working list of people for the open job modal
 let jobSort = 'priority';   // how the jobs board + Saved list are ordered
 
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
@@ -970,11 +1459,69 @@ function loadState() {
   autoBackup();
 }
 function saveState() {
-  localStorage.setItem(LS_STATE, JSON.stringify({ seed: SEED, jobs, nextJobId, experiences, nextExpId }));
+  writeLS(LS_STATE, JSON.stringify({ seed: SEED, jobs, nextJobId, experiences, nextExpId }));
   schedulePush();
 }
 
+// ── Storage guard ──
+// Every app in this vault is a file:// page, so they all share ONE 5 MB localStorage: jobs, tasks,
+// trips, the legacy tracker, and each one's `*_backups` history. On 2026-08-05 that quota filled up
+// and `setItem` threw inside `loadState()`, which killed the boot before a single card was drawn:
+// the board looked empty while the data was sitting there intact. So a write must never throw. When
+// room runs out we drop backup history (disposable by definition, oldest half first) and retry.
+const BACKUP_KEYS = ['jobs_backups', 'tracker_backups', 'tasks_backups', 'trips_backups'];
+let storageWarned = false;
+
+// Frees one chunk and reports what it dropped, or null when there is nothing disposable left.
+// Our own history goes first, then the other apps' - never any `*_state`, that is real data.
+function freeSomeRoom(exceptKey) {
+  const order = [LS_BACKUPS].concat(BACKUP_KEYS.filter(k => k !== LS_BACKUPS && k !== exceptKey));
+  for (const key of order) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    let arr = null;
+    try { arr = JSON.parse(raw); } catch (e) {}
+    if (!Array.isArray(arr) || arr.length <= 1) { localStorage.removeItem(key); return key; }
+    arr.splice(0, Math.ceil(arr.length / 2));           // drop the oldest half
+    try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) { localStorage.removeItem(key); }
+    return key;
+  }
+  return null;
+}
+function writeLS(key, value) {
+  for (let i = 0; i < 8; i++) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) {
+      if (!freeSomeRoom(key)) break;
+      if (!storageWarned) { storageWarned = true; try { toast('Storage was full - trimmed old local backups to make room'); } catch (e2) {} }
+    }
+  }
+  try { setSync('Storage full'); } catch (e) {}
+  if (!storageWarned) { storageWarned = true; try { toast('Storage is full - cannot save on this device'); } catch (e2) {} }
+  return false;
+}
+
 // Defaults for any job saved before a field existed, then the one-time demo heal.
+// ── The experience log ──────────────────────────────────────────────────────
+// Seeded entries are merged in by title and never overwrite what the user edited.
+const EXP_SEED = [];   // demo build: the real experience seed is private
+// Added when missing, matched on the title. Never edits or removes what is already there.
+function experienceSeed() {
+  try {
+    const have = new Set(experiences.map(x => String(x.title || '').trim().toLowerCase()));
+    let added = 0;
+    EXP_SEED.forEach(e => {
+      if (have.has(e.t.trim().toLowerCase())) return;
+      experiences.push({ id: nextExpId++, title: e.t, org: e.o, role: e.r,
+                         start: e.a || '', end: e.b || '', metric: e.m || '',
+                         situation: '', task: '', action: '', result: e.d || '',
+                         notes: '', star: !!e.star, skills: (e.k || []).slice() });
+      added++;
+    });
+    return added;
+  } catch (e) { return 0; }
+}
+
 function normalizeState() {
   jobs.forEach(j => {
     if (j.cvUrl === undefined) j.cvUrl = '';
@@ -993,9 +1540,14 @@ function normalizeState() {
     if (j.flagged === undefined) j.flagged = false;
     // j.cvData (base64 data URL) + j.cvName hold a CV imported via the picker / drag-drop; j.cvUrl is a vault path or URL.
     if (!Array.isArray(j.people)) j.people = parsePeople(j.contact); // migrate old freeform contacts
-    delete j.cv; // CV status pill removed 2026-07-21 (replaced by the Build CV button)
+    normalizeSteps(j);   // the flow: built once from contactMethod + people, then owned by the card
+    j.interviewHr = ivPerson(j.interviewHr);
+    j.interviewHm = ivPerson(j.interviewHm);
+    delete j.cv; // CV status pill removed 2026-07-21; the Build CV button that replaced it went 2026-08-06
   });
   healDemoJobs();
+  flowHeal();                          // the real outreach history, once
+  jobs.forEach(foldPeopleIntoFlow);   // healDemoJobs curates people directly; the flow must see them
   nextJobId = Math.max(nextJobId, 1);
   experiences = (Array.isArray(experiences) ? experiences : []).map(x => ({
     title: '', org: '', role: '', start: '', end: '', metric: '',
@@ -1003,10 +1555,74 @@ function normalizeState() {
     skills: Array.isArray(x.skills) ? x.skills : [],
   }));
   nextExpId = Math.max(nextExpId, ...experiences.map(x => (x.id || 0) + 1), 1);
+  experienceSeed();   // the master CV's experiences, added once each, matched by title
 }
 // One-time heal for demo/seed jobs stored before their details were filled in. The additive
 // seed-merge only ADDS new ids, so later edits to an existing seed job never reach a board that
 // already saved it. This fills ONLY still-empty fields — it never overwrites anything you typed.
+// ── The outreach history, as it actually happened ────────────────────────────
+// Transcribed from your LinkedIn threads on 2026-08-06. One-time (marker below), because
+// `steps` belongs to him the moment he opens the card: re-running would wipe what he added.
+// Status is only promoted when the card is untouched ('Saved'), so a stage he set by hand wins.
+const FLOW_HEAL_KEY = 'jobs_flow_heal_v1';
+const FLOW_HEAL = {};     // demo build: the real outreach history is private
+// Steps I curate AFTER the v1 rewrite are matched by content, not gated by a marker. A marker
+// records "this browser has run it", which is exactly wrong when the earlier run wrote its marker
+// and then had its work overwritten: the step never appeared on your board and no later fix
+// could reach it. Matching on kind+label instead means the check is "is it there?", which is true
+// on every board, every load, and cannot double-add. He stays free to edit what is there: only a
+// deleted step comes back.
+const FLOW_ENSURE = {};   // demo build: the real outreach history is private
+// One-off date corrections, also content-matched: they only fire while the step still carries the
+// wrong value, so editing it by hand ends the correction rather than fighting it.
+const FLOW_REDATE = [
+  { id:108, kind:'followup', from:'2026-08-05', to:'2026-08-03' },   // he answered her the morning she wrote
+];
+function flowEnsure() {
+  try {
+    Object.keys(FLOW_ENSURE).forEach(k => {
+      const j = jobs.find(x => x.id === +k); if (!j) return;
+      if (!Array.isArray(j.steps)) j.steps = [];
+      let added = false;
+      FLOW_ENSURE[k].forEach(x => {
+        if (j.steps.some(st => st.kind === x.kind && (st.label || '') === x.label)) return;
+        j.steps.push({ kind:x.kind, who:x.who || '', title:x.title || '', label:x.label || '',
+                       on:x.on || '', note:x.note || '', par: !!x.par });
+        added = true;
+        // Only on the load that actually adds the step, and only from Saved: applying moves a
+        // card into the pipeline once, and never argues with a stage he set afterwards.
+        if (x.promote && j.status === 'Saved') j.status = x.promote;
+      });
+      if (added) { j.steps = sortSteps(j.steps); if (j.steps.length) j.steps[0].par = false; }
+    });
+    FLOW_REDATE.forEach(r => {
+      const j = jobs.find(x => x.id === r.id); if (!j || !Array.isArray(j.steps)) return;
+      const st = j.steps.find(x => x.kind === r.kind && x.on === r.from);
+      if (st) { st.on = r.to; j.steps = sortSteps(j.steps); if (j.steps.length) j.steps[0].par = false; }
+    });
+  } catch (e) {}
+}
+function flowHeal() {
+  try {
+    // NOT `return`: that exits flowHeal and skips the ensure below it, which is exactly how the
+    // Autodesk application step failed to appear on a board that had already run v1.
+    if (!localStorage.getItem(FLOW_HEAL_KEY)) {
+    Object.keys(FLOW_HEAL).forEach(k => {
+      const j = jobs.find(x => x.id === +k); if (!j) return;
+      const h = FLOW_HEAL[k];
+      j.steps = h.steps.map(x => ({ kind:x.kind, who:x.who || '', title:x.title || '', label:x.label || '',
+                                    on:x.on || '', note:x.note || '', par: !!x.par }));
+      if (j.steps.length) j.steps[0].par = false;
+      if (h.promote && j.status === 'Saved') j.status = h.promote;   // never override a stage he set
+    });
+    writeLS(FLOW_HEAL_KEY, '1');
+    }
+  } catch (e) {}
+  // AFTER the v1 rewrite, never before: v1 replaces `steps` wholesale, so anything added first
+  // would be thrown away on a board seeing v1 for the first time.
+  flowEnsure();
+}
+
 function healDemoJobs() { /* demo build: no reference patches needed */ }
 
 // Manual backup: download the whole board as a dated JSON file (lands in Downloads).
@@ -1038,12 +1654,25 @@ function restoreBackup(file) {
   reader.readAsText(file);
 }
 // In-browser safety net: a rolling ring of the last 15 states in localStorage.
+// A local rollback copy per page load. Nothing reads it today (restore goes through cloud history),
+// so it is capped hard: 15 fat copies had grown to 2.5 MB, half the shared quota, which is what
+// broke the app. Two rules keep it small: never store the CV blobs (~100 KB each, and they already
+// live in the cloud row and in this file's seed), and cap the whole array by size, not just count.
+const BACKUP_KEEP = 5;
+const BACKUP_MAX_CHARS = 400000;
 function autoBackup() {
   try {
     const arr = JSON.parse(localStorage.getItem(LS_BACKUPS) || '[]');
-    arr.push({ ts: new Date().toISOString(), seed: SEED, jobs, nextJobId, experiences, nextExpId });
-    while (arr.length > 15) arr.shift();
-    localStorage.setItem(LS_BACKUPS, JSON.stringify(arr));
+    const slim = jobs.map(j => {
+      if (!j.cvData) return j;
+      const copy = { ...j, cvStripped: true };   // cvName/cvUrl stay, so you still see one was attached
+      delete copy.cvData;
+      return copy;
+    });
+    arr.push({ ts: new Date().toISOString(), seed: SEED, jobs: slim, nextJobId, experiences, nextExpId });
+    while (arr.length > BACKUP_KEEP) arr.shift();
+    while (arr.length > 1 && JSON.stringify(arr).length > BACKUP_MAX_CHARS) arr.shift();
+    writeLS(LS_BACKUPS, JSON.stringify(arr));
   } catch (e) {}
 }
 // ── Helpers ──
@@ -1052,8 +1681,20 @@ function daysTo(due) {
   const d = new Date(due + 'T00:00:00'); const now = new Date(); now.setHours(0,0,0,0);
   return Math.round((d - now) / 86400000);
 }
+// A date is only a date if it is a complete ISO day in a plausible year. Half-typed values
+// ("0009-02-06" while you are still entering the year) and anything a stray keystroke produces
+// must never reach the model: they render as "Invalid Date" and re-file the whole history.
+function validISO(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v || ''))) return false;
+  const y = +v.slice(0, 4);
+  if (y < 1990 || y > 2100) return false;
+  const d = new Date(v + 'T00:00:00');
+  return !isNaN(d.getTime());
+}
 function fmtDate(due) {
-  return new Date(due + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  const d = new Date(due + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';                 // never render the string "Invalid Date"
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
 }
 function dueLabel(due) {
   const d = daysTo(due);
@@ -1151,41 +1792,18 @@ function stripLink(t) {
     .trim();
 }
 // People shown on the card / saved row.
-function renderPeopleDisplay(j) {
-  const list = jobPeople(j);   // stored order is authoritative: first person = principal
+// `opts.mainOnly` is what the kanban passes: on a card, the one name you would call is the
+// useful line, and the rest is noise that costs height. The full list is in the card's modal.
+function renderPeopleDisplay(j, opts) {
+  let list = jobPeople(j);     // stored order is authoritative: first person = principal
+  if (opts && opts.mainOnly) list = list.slice(0, 1);
   if (!list.length) return '';
   // Concise: principal star + recruiter name + title only (link stripped; full info lives in the modal).
   return list.map((p, idx) => { const title = stripLink(p.title); return `<div class="contact-line">${idx === 0 ? '<span class="primary-star" title="Principal contact">★</span> ' : ''}<strong>${escHtml(p.name)}</strong>${title ? ' - ' + escHtml(title) : ''}</div>`; }).join('');
 }
-// ── People editor (in the job modal) ──
-function renderPeople() {
-  const host = document.getElementById('f-people'); if (!host) return;
-  if (!modalPeople.length) { host.innerHTML = '<div class="jm-hint" style="padding:2px 0 4px">No one added yet.</div>'; return; }
-  host.innerHTML = modalPeople.map((p, i) => `
-    <div class="person-row" ondragover="personDragOver(event,this)" ondragleave="this.classList.remove('drop-hot')" ondrop="personDrop(event,${i})">
-      ${i === 0 ? '<div class="pr-principal-tag" title="Principal contact">★</div>' : ''}
-      <span class="pr-drag" draggable="true" ondragstart="personDragStart(event,${i})" ondragend="personDragEnd()" title="Drag to reorder — top is the principal contact">⠿</span>
-      <input class="pr-name" placeholder="Name" value="${escAttr(p.name || '')}" oninput="modalPeople[${i}].name=this.value">
-      <input class="pr-title" placeholder="Title / role (hiring manager, recruiter…)" value="${escAttr(p.title || '')}" oninput="modalPeople[${i}].title=this.value">
-      <button type="button" class="icon-btn" onclick="removePerson(${i})" title="Remove person">🗑️</button>
-      <textarea class="pr-info" placeholder="Relevant info: how you connected, LinkedIn, mutual, what they said…" oninput="modalPeople[${i}].info=this.value">${escHtml(p.info || '')}</textarea>
-    </div>`).join('');
-}
-// Drag a person row to reorder; the top one is the principal contact.
-let dragPersonIdx = null;
-function personDragStart(e, i) { dragPersonIdx = i; if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'p' + i); } catch(_){} } }
-function personDragEnd() { dragPersonIdx = null; document.querySelectorAll('.person-row.drop-hot').forEach(r => r.classList.remove('drop-hot')); }
-function personDragOver(e, row) { if (dragPersonIdx === null) return; e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; row.classList.add('drop-hot'); }
-function personDrop(e, i) {
-  e.preventDefault();
-  if (dragPersonIdx === null || dragPersonIdx === i) { personDragEnd(); return; }
-  const [moved] = modalPeople.splice(dragPersonIdx, 1);
-  modalPeople.splice(i, 0, moved);
-  dragPersonIdx = null;
-  renderPeople();
-}
-function addPerson() { modalPeople.push({ name: '', title: '', info: '' }); renderPeople(); }
-function removePerson(i) { modalPeople.splice(i, 1); renderPeople(); }
+// People are no longer edited as a list: they are edited where they happened, in the
+// flow on the General tab (`renderFlow`) and in the two interview slots. `people[]`
+// is rebuilt from both by `peopleFromFlow` on save.
 // Compact review rating chip for the card (extracts a ★ rating from the free-text field).
 function gdRating(s) {
   s = String(s || '');
@@ -1235,6 +1853,43 @@ function sortedJobs() {
   });
 }
 function setJobSort(v) { jobSort = v; buildJobList(); }
+
+// ── Saved-backlog search ─────────────────────────────────────────────────────
+// Filters the Saved list only (the kanban is the active pipeline, it stays put).
+// While a search is active the company grouping and the Hidden drawer are bypassed,
+// so every matching role shows as its own card instead of folding into a "+N".
+let jobSearch = '';
+// The Saved shelf shows one importance at a time. The backlog is long and mixed, and
+// scrolling past 30 Low roles to find the High ones was the whole problem. Remembered
+// across reloads, and bypassed entirely while searching.
+const PRI_TABS = ['High', 'Medium', 'Low'];
+let savedPri = 'High';
+try { const p = localStorage.getItem('jobs_pri_tab'); if (PRI_TABS.includes(p)) savedPri = p; } catch (e) {}
+function setSavedPri(p) {
+  if (!PRI_TABS.includes(p)) return;
+  savedPri = p;
+  try { writeLS('jobs_pri_tab', p); } catch (e) {}
+  buildJobList();
+}
+function searchText(j) {
+  const people = (Array.isArray(j.people) ? j.people : [])
+    .map(p => [p.name, p.title, p.info].filter(Boolean).join(' ')).join(' ');
+  return [j.company, j.role, j.status, j.priority, j.notes, j.keyNotes, j.desc,
+          j.common, j.values, j.about, j.salary, j.cvName, people]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+// Every whitespace-separated term must appear somewhere, so "lyft hardware" narrows.
+function jobMatchesSearch(j, q) {
+  const hay = searchText(j);
+  return q.split(/\s+/).filter(Boolean).every(term => hay.includes(term));
+}
+function setJobSearch(v) { jobSearch = v; buildJobList(); }
+function clearJobSearch() {
+  jobSearch = '';
+  buildJobList();
+  const si = document.getElementById('jobSearchInput');
+  if (si) si.focus({ preventScroll: true });
+}
 // Click a job's priority pill to cycle High → Medium → Low (quick "importance").
 function cycleJobPriority(e, id) {
   e.stopPropagation();
@@ -1288,6 +1943,95 @@ const BENEFIT_CHIPS = [
   [/tuition|learning budget|professional development|training budget|développement professionnel/, 'Learning budget'],
   [/parental leave|maternity|paternity|congé parental/, 'Parental leave'],
 ];
+// ── Follow-up clock ──────────────────────────────────────────────────────────
+// How long the first outreach message has been sitting without an answer.
+// The date comes from the contact prompt that fires when a role hits "Applied"
+// (p.contactedOn per person, j.appliedOn as the fallback). Shown ONLY on Applied
+// cards; at FOLLOWUP_DAYS it turns amber, which is the cue to send the nudge.
+const FOLLOWUP_DAYS = 7;
+function firstMsgDate(j) {
+  const dates = jobPeople(j).map(p => p.contactedOn).filter(Boolean);
+  if (j.appliedOn) dates.push(j.appliedOn);
+  return dates.length ? dates.slice().sort()[0] : null;   // ISO dates sort chronologically
+}
+function daysSinceMsg(j) {
+  const d = firstMsgDate(j);
+  const n = d ? daysTo(d) : null;
+  return n === null ? null : Math.max(0, -n);
+}
+// ── What you did on this role, as two icons ─────────────────────────────────
+// Only two things count on a card: did you write to a human, and did you apply on their site.
+// The icon itself carries the colour, which is the state of that thread:
+//   blue    sent, still early                 orange  AGE_WARN days, no answer
+//   green   they answered                     red     AGE_LATE days, and then
+//   black   AGE_DEAD days, treat it as gone
+// They are inline SVG rather than emoji for exactly this reason: an emoji cannot be recoloured,
+// which is what forced the underline bar the first version used.
+const ANSWER_KINDS = ['reply', 'inbound'];        // an answer FROM them
+const ASK_KINDS    = ['cold', 'referral', 'site'];  // a fresh approach, not a nudge
+const AGE_WARN = 10;   // no answer this long -> orange
+const AGE_LATE = 15;   // ...then red
+const AGE_DEAD = 18;   // ...then black
+const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M3 6.5l9 6.5 9-6.5"/></svg>';
+const ICON_SITE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.8 3.8 9S14.5 18.3 12 21c-2.5-2.7-3.8-5.8-3.8-9S9.5 5.7 12 3z"/></svg>';
+// `contact` is deliberately NOT here. A logged contact is a person on the card, not a message you
+// sent, and the migrated ones carry no date: they sank to the end of the history and posed as
+// "the last message" on four cards, with no date and the wrong colour.
+const ACTION_GROUPS = [
+  { id:'msg',  icon:ICON_MAIL, label:'Message sent',   kinds:['cold', 'referral', 'followup'] },
+  { id:'site', icon:ICON_SITE, label:'Applied online', kinds:['site'] },
+];
+function actionState(days, answered) {
+  if (answered) return { cls:'got',  word:'they answered' };
+  if (days === null) return { cls:'sent', word:'no date logged' };
+  const since = days + (days === 1 ? ' day' : ' days');
+  if (days >= AGE_DEAD) return { cls:'dead', word:'no answer in ' + since + ', treat it as gone' };
+  if (days >= AGE_LATE) return { cls:'late', word:'no answer in ' + since + ', last call' };
+  if (days >= AGE_WARN) return { cls:'warn', word:'no answer in ' + since + ', send a follow-up' };
+  return { cls:'sent', word: days === 0 ? 'sent today' : 'sent ' + since + ' ago' };
+}
+function actionIconsHTML(j) {
+  const steps = flowSteps(j).filter(s => s.kind);   // stored chronologically
+  if (!steps.length) return '';
+  const out = [];
+  ACTION_GROUPS.forEach(g => {
+    // POSITION in the history decides this, not the date. A reply sent the same day as
+    // two later moves would otherwise be credited to moves nobody has answered yet.
+    // An action is answered only when an answer comes AFTER it in the history.
+    let at = -1, dated = -1, ask = -1;
+    steps.forEach((s, i) => {
+      if (!g.kinds.includes(s.kind)) return;
+      at = i;
+      if (s.on) dated = i;
+      if (ASK_KINDS.includes(s.kind)) ask = i;   // a fresh approach, as opposed to a nudge
+    });
+    if (dated >= 0) at = dated;    // a dated move beats an undated one, wherever it sits
+    if (at < 0) return;
+    const last = steps[at];
+    const answerAfter = i0 => steps.some((s, i) => i > i0 && ANSWER_KINDS.includes(s.kind));
+    // Answered means they replied to your most recent ASK. A follow-up or thank-you you sent
+    // AFTER their reply does not put you back into waiting: that is what made VOSKER, who had
+    // already answered, sit on orange telling him to chase them.
+    const answered = answerAfter(at) || (last.kind === 'followup' && ask >= 0 && answerAfter(ask));
+    const days = last.on ? daysSinceISO(last.on) : null;
+    const st = actionState(days, answered);
+    const who = String(last.who || '').trim();
+    const tip = [g.label, who, last.on ? fmtDate(last.on) : '', st.word].filter(Boolean).join(' \u00b7 ');
+    out.push(`<span class="jc-act ${st.cls}" title="${escAttr(tip)}">${g.icon}</span>`);
+  });
+  return out.length ? `<div class="jc-acts">${out.join('')}</div>` : '';
+}
+function followUpHTML(j) {
+  if (j.status !== 'Applied') return '';
+  const d = daysSinceMsg(j);
+  if (d === null) return '';
+  const label = d === 0 ? 'today' : d === 1 ? '1 day' : d + ' days';
+  const due = d >= FOLLOWUP_DAYS;
+  const tip = 'First message sent ' + fmtDate(firstMsgDate(j))
+    + (due ? ' · follow-up due (' + FOLLOWUP_DAYS + '+ days, no reply logged)'
+           : ' · follow-up at ' + FOLLOWUP_DAYS + ' days');
+  return `<div class="jc-follow${due ? ' due' : ''}" title="${escAttr(tip)}">✉️ ${label}</div>`;
+}
 function jobKeyChips(j) {
   const text = ((j.role || '') + ' ' + (j.desc || '') + ' ' + (j.notes || '')).toLowerCase();
   const chips = [];
@@ -1560,40 +2304,8 @@ function refreshTags() {
   el.innerHTML = tags.map(t => `<span class="tag-chip">${t}</span>`).join('');
 }
 
-// ── Build CV from master: copy a ready-to-paste prompt (master CV + this job's description) ──
-function buildCvPrompt(j) {
-  return [
-    'Build a tailored CV for this job from my master CV.',
-    '',
-    'Company: ' + (j.company || ''),
-    'Role: ' + (j.role || ''),
-    j.url ? 'Posting: ' + j.url : '',
-    '',
-    'Use my master CV/resume as the source of truth. Keep it to 1-2 pages, ATS-friendly, quantified and honest. Tailor it to this job description:',
-    '',
-    '--- JOB DESCRIPTION ---',
-    (j.desc && j.desc.trim()) ? j.desc.trim() : '(no description saved — add it to the job first)'
-  ].filter(x => x !== '').join('\n');
-}
-function buildCv(id) {
-  const j = jobs.find(x => x.id === id); if (!j) return;
-  const text = buildCvPrompt(j);
-  const done = () => toast('CV build prompt copied — paste it to Claude 📋');
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
-  } else fallbackCopy(text, done);
-}
-function buildCvFromModal() {
-  const j = { company: document.getElementById('f-company').value.trim(),
-              role: document.getElementById('f-role').value.trim(),
-              url: document.getElementById('f-url').value.trim(),
-              desc: document.getElementById('f-desc').value };
-  if (!j.company || !j.role) { alert('Add the company and role first.'); return; }
-  const text = buildCvPrompt(j);
-  const done = () => toast('CV build prompt copied — paste it to Claude 📋');
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
-  else fallbackCopy(text, done);
-}
+// The "Build CV from master" button (a prompt-copier) was removed 2026-08-06: the CVs are
+// written by hand, not started from a clipboard paste.
 function fallbackCopy(text, done) {
   const ta = document.createElement('textarea'); ta.value = text;
   ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
@@ -2066,6 +2778,50 @@ function toggleFlag(e, id) { e.stopPropagation(); const j = jobs.find(x => x.id 
 // Cold-outreach guidelines (see memory/feedback-cold-outreach.md): personalized + names the exact
 // role, ~50-70 words, SOFT ask (share CV / point to hiring manager, not a hard job ask), OFFERS the
 // CV rather than attaching, and a redirect fallback if she is not the right desk. English, for LinkedIn.
+// ── First-contact message ────────────────────────────────────────────────────
+// Rewritten 2026-07-31. The goal of message #1 is a FIRST INTERVIEW, not a reply.
+// See memory/feedback-cold-outreach.md. Four moves, in this order:
+//   1. Say you are applying (you become a candidate in their pipeline, not a networker).
+//   2. ONE concrete thing you did that maps to this role. Never "looks like a close fit".
+//   3. Clear the screening gates (location, work mode, eligibility) in one line.
+//   4. Ask for 15 minutes. A question gets answered and the thread dies; a small
+//      time-bound ask can be said yes to in one click.
+// Banned: "thanks for connecting", offering the CV, and asking to be pointed at the
+// hiring manager. All three hand your work to them and earn a polite like at best.
+
+// The proof line is seeded from the card's own "points in common", so it is specific
+// to THIS role. With nothing stored, it leaves a slot rather than inventing a claim.
+function reachProof(j) {
+  // Drop the parenthetical example lists first, or a naive comma split cuts inside one
+  // ("...approval (JTEKT" was the bug). Then take whole clauses until there is enough
+  // to say something, capped so the line stays a sentence and not a CV dump.
+  const c = (j.common || '').replace(/\s*\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+  if (!c) return '[one concrete thing you did that maps to this role]';
+  const clauses = c.split(/[.;]|,\s+/).map(s => s.trim()).filter(Boolean);
+  const take = [];
+  for (const cl of clauses) {
+    take.push(cl);
+    if (take.join(' ').split(/\s+/).length >= 7) break;
+  }
+  const out = take.join(', ').split(/\s+/).slice(0, 16).join(' ').replace(/[,]$/, '');
+  return out.charAt(0).toLowerCase() + out.slice(1);
+}
+// Postings often carry the title twice (EN / FR). Send one.
+function reachRole(j) { return String(j.role || 'role').split(/\s+\/\s+/)[0].trim(); }
+// Location, work mode and eligibility: the reasons a recruiter bins you without asking.
+function reachGates(j) {
+  const t = ((j.notes || '') + ' ' + (j.role || '')).toLowerCase();
+  const all = (t + ' ' + (j.desc || '')).toLowerCase();
+  const bits = [];
+  if (/montr[eé]al|qu[eé]bec|laval|longueuil|brossard/.test(t)) bits.push("I'm Montréal-based");
+  if (/on-?site/.test(t)) bits.push('on-site works for me');
+  else if (/hybrid/.test(t)) bits.push('the hybrid schedule works for me');
+  else if (/remote/.test(t)) bits.push('set up to work remotely');
+  // Only claim eligibility for the CANADIAN process. US ITAR needs a US person, which he is not.
+  if (/reliability[- ]status|controlled goods|\bcgp\b/.test(all)) bits.push('and I can go through the reliability-status and controlled-goods process');
+  if (!bits.length) return '';
+  return bits.join(', ').replace(/, and /, ' and ') + '.';
+}
 function reachMessage(j, person) {
   const p = person || (Array.isArray(j.people) && j.people[0]) || {};
   const first = (p.name || '').trim().split(/\s+/)[0] || 'there';
@@ -2112,7 +2868,14 @@ function openCv(j) {
 // Open the OS file browser to pick a CV for this job.
 let cvPickerJobId = null;
 function openCvPicker(id) { cvPickerJobId = id; const inp = document.getElementById('cvImportFile'); inp.value = ''; inp.click(); }
-function cvFilePicked(inp) { const f = inp.files && inp.files[0]; if (f && cvPickerJobId != null) importCvFile(cvPickerJobId, f); cvPickerJobId = null; inp.value = ''; }
+function cvFilePicked(inp) {
+  const f = inp.files && inp.files[0];
+  // '__modal' means the picker was opened from the open job card: the file goes into the
+  // modal's own state and is only written to the job on Save.
+  if (f && cvPickerJobId === '__modal') readCvIntoModal(f);
+  else if (f && cvPickerJobId != null) importCvFile(cvPickerJobId, f);
+  cvPickerJobId = null; inp.value = '';
+}
 // Read a picked/dropped CV file into the job (stored as a base64 data URL so it syncs + reopens).
 function importCvFile(id, file) {
   const j = jobs.find(x => x.id === id); if (!j) return;
@@ -2153,7 +2916,7 @@ function archivedRowHTML(j) {
   </div>`;
 }
 function jobCardHTML(j) {
-  return `<div class="job-card" draggable="true" onclick="jobCardClick(event,${j.id})" ondragstart="jobDragStart(event,${j.id})" ondragend="jobDragEnd(event)" ondragover="cvDragOver(event,${j.id})" ondragleave="cvDragLeave(event)" ondrop="cvDrop(event,${j.id})">
+  return `<div class="job-card" draggable="true" onclick="jobCardClick(event,${j.id})" ondragstart="jobDragStart(event,${j.id})" ondragend="jobDragEnd(event)" ondragover="kanDragOver(event,${j.id})" ondragleave="kanDragLeave(event)" ondrop="kanDrop(event,${j.id})">
     <div class="jc-top">
       <div class="jc-head-left">
         <span class="jc-co">${j.url ? `<a href="${j.url}" target="_blank" style="color:inherit">${j.company}</a>` : j.company}</span>
@@ -2164,16 +2927,18 @@ function jobCardHTML(j) {
         ${matchChipHTML(j)}
       </div>
     </div>
-    ${jobMetaPills(j)}
-    <span class="status-badge ${STATUS_CLASS[j.status]||'s-saved'}" onclick="openStatusMenu(${j.id},event)" title="Change stage">${j.status}</span>
-    <div class="jc-contacts">${renderPeopleDisplay(j)}</div>
+    <div class="jc-contacts">${renderPeopleDisplay(j, { mainOnly: true })}</div>
     ${jobKeyChips(j)}
     <div class="jc-actions">
+      <!-- The stage badge is gone from the card (the column already says the stage), so the
+           menu that used to hang off it lives here for when dragging is not convenient. -->
+      <button class="icon-btn" onclick="openStatusMenu(${j.id},event)" title="Move to another stage">➜</button>
       <button class="icon-btn" onclick="copyReach(event,${j.id})" title="Copy a reach-out message">✉️</button>
       <button class="icon-btn cv-btn" onclick="cvAction(event,${j.id})" title="${j.cvUrl ? 'Open the linked CV' : 'Link a CV (vault file or URL)'}">${j.cvUrl ? '⬇️' : '⬆️'}</button>
       <button class="icon-btn" onclick="archiveJob(event,${j.id})" title="Archive — not pursuing">📁</button>
       <button class="icon-btn" onclick="event.stopPropagation();deleteJob(${j.id})" title="Delete">🗑️</button>
     </div>
+    <div class="jc-foot">${actionIconsHTML(j)}${followUpHTML(j)}</div>
   </div>`;
 }
 
@@ -2187,6 +2952,220 @@ function openCompanyRoles(e, id) {
   const roles = jobs.filter(x => !x.archived && x.status === 'Saved' && (x.company || '').trim().toLowerCase() === co);
   openMenu(e, roles.map(r => ({ val: r.id, label: (r.id === j.id ? '★ ' : '') + (r.role || '(untitled role)'), cur: r.id === j.id })), rid => openJobModal(rid));
 }
+// ══════════════════════════════════════════════════════════════
+// MANUAL ORDER - drag a company card, or a role inside one, to put it exactly
+// where you want it. The position lives on the jobs (coPos per company, rolePos
+// within a company), so it rides every save, backup and cloud push already.
+// Dragging switches the sort to "My order"; picking a real sort ignores it but
+// never throws it away.
+// ══════════════════════════════════════════════════════════════
+let dragCoKey = null;        // company being dragged, null when a role is
+let dragRoleId = null;       // role being dragged inside its company card
+let dragJobId = null;        // any job card in flight, wherever it started
+let lastCoOrder = [];        // the company keys as they were last drawn, in order
+let lastRoleOrder = {};      // companyKey -> role ids as they were last drawn
+let lastKanOrder = {};       // stage key -> job ids as they were last drawn in that column
+                             // A drop means "put it here, where I can see it", so both
+                             // reorders read the DRAWN order. Recomputing it from `jobs`
+                             // silently reorders against a different list and scrambles.
+
+function coPosOf(roles) {
+  const hit = roles.find(r => Number.isFinite(r.coPos));
+  return hit ? hit.coPos : Infinity;
+}
+// Stamp 0..n-1 onto every role of every company, in the given order.
+function stampCoOrder(keys) {
+  keys.forEach((k, i) => jobs.forEach(j => { if (coKey(j.company) === k) j.coPos = i; }));
+}
+function stampRoleOrder(ids) { ids.forEach((id, i) => { const j = jobs.find(x => x.id === id); if (j) j.rolePos = i; }); }
+function stampKanOrder(ids) { ids.forEach((id, i) => { const j = jobs.find(x => x.id === id); if (j) j.kanPos = i; }); }
+// Move `from` to sit immediately before `to` in a list (or last, when to is null).
+function reinsert(list, from, to) {
+  if (to === from) return list.slice();      // "put it right where it already is"
+  const out = list.filter(x => x !== from);
+  const at = to == null ? out.length : out.indexOf(to);
+  out.splice(at < 0 ? out.length : at, 0, from);
+  return out;
+}
+function clearDropMarks() {
+  document.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'));
+}
+// Before or after, from which half of the target the cursor is in.
+function dropsBefore(e, horizontal) {
+  const r = e.currentTarget.getBoundingClientRect();
+  return horizontal ? (e.clientX < r.left + r.width / 2) : (e.clientY < r.top + r.height / 2);
+}
+
+function coDragStart(e, key) {
+  // A role inside the card starts its own drag; do not hijack it.
+  if (e.target && e.target.closest && e.target.closest('.co-role')) return;
+  e.stopPropagation();
+  dragCoKey = key; dragRoleId = null;
+  e.dataTransfer.setData('text/plain', 'co:' + key);   // not a number, so jobDrop ignores it
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function coDragEnd(e) {
+  if (e && e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('dragging');
+  dragCoKey = null; clearDropMarks();
+}
+function coDragOver(e, key) {
+  if (dragCoKey === null || dragCoKey === key) return;
+  e.preventDefault(); e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  const before = dropsBefore(e, true);
+  e.currentTarget.classList.remove('drop-before', 'drop-after');
+  e.currentTarget.classList.add(before ? 'drop-before' : 'drop-after');
+}
+function coDragLeave(e) { if (e.currentTarget.classList) e.currentTarget.classList.remove('drop-before', 'drop-after'); }
+function coDrop(e, key) {
+  if (dragCoKey === null || dragCoKey === key) return;
+  e.preventDefault(); e.stopPropagation();
+  const before = dropsBefore(e, true);
+  const order = lastCoOrder.length ? lastCoOrder.slice() : [];
+  const idx = order.indexOf(key);
+  const target = before ? key : (idx >= 0 && idx + 1 < order.length ? order[idx + 1] : null);
+  stampCoOrder(reinsert(order, dragCoKey, target));
+  dragCoKey = null; clearDropMarks();
+  jobSort = 'manual';                       // you just placed something: respect it
+  saveState(); buildJobList();
+}
+
+// A role dropped on another role of the SAME company reorders it. Dropped anywhere
+// else (a kanban column) it still just changes stage, which is the existing behaviour.
+function roleDragStart(e, id) {
+  dragRoleId = id; dragCoKey = null;
+  jobDragStart(e, id);
+}
+function roleDragOver(e, id) {
+  cvDragOver(e, id);                        // a real FILE drop still attaches a CV
+  if (dragRoleId === null || dragRoleId === id) return;
+  const a = jobs.find(x => x.id === dragRoleId), b = jobs.find(x => x.id === id);
+  if (!a || !b || coKey(a.company) !== coKey(b.company)) return;   // never across companies
+  e.preventDefault(); e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.remove('drop-before', 'drop-after');
+  e.currentTarget.classList.add(dropsBefore(e, false) ? 'drop-before' : 'drop-after');
+}
+function roleDragLeave(e) { cvDragLeave(e); if (e.currentTarget.classList) e.currentTarget.classList.remove('drop-before', 'drop-after'); }
+function roleDrop(e, id) {
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { cvDrop(e, id); return; }
+  if (dragRoleId === null || dragRoleId === id) return;
+  const a = jobs.find(x => x.id === dragRoleId), b = jobs.find(x => x.id === id);
+  if (!a || !b || coKey(a.company) !== coKey(b.company)) return;
+  e.preventDefault(); e.stopPropagation();
+  const before = dropsBefore(e, false);
+  const ids = (lastRoleOrder[coKey(a.company)] || []).slice();
+  if (!ids.length || ids.indexOf(dragRoleId) < 0 || ids.indexOf(id) < 0) return;
+  const idx = ids.indexOf(id);
+  const target = before ? id : (idx >= 0 && idx + 1 < ids.length ? ids[idx + 1] : null);
+  stampRoleOrder(reinsert(ids, dragRoleId, target));
+  dragRoleId = null; clearDropMarks();
+  jobSort = 'manual';
+  saveState(); buildJobList();
+}
+// A card dropped on another card in a kanban column lands exactly there. Coming from
+// another column it changes stage too, so "move to Applied, third from the top" is one
+// gesture. Dropped on the column's empty space it just changes stage, as it always did.
+function stageOf(j) { return JOB_STAGES.find(s => s.match.includes(j.status)); }
+function kanDragOver(e, id) {
+  cvDragOver(e, id);                        // a real FILE drop still attaches a CV
+  if (dragJobId === null || dragJobId === id) return;
+  const a = jobs.find(x => x.id === dragJobId), b = jobs.find(x => x.id === id);
+  if (!a || !b || !stageOf(b)) return;
+  e.preventDefault(); e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.remove('drop-before', 'drop-after');
+  e.currentTarget.classList.add(dropsBefore(e, false) ? 'drop-before' : 'drop-after');
+}
+function kanDragLeave(e) { cvDragLeave(e); if (e.currentTarget.classList) e.currentTarget.classList.remove('drop-before', 'drop-after'); }
+function kanDrop(e, id) {
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { cvDrop(e, id); return; }
+  if (dragJobId === null || dragJobId === id) return;
+  const a = jobs.find(x => x.id === dragJobId), b = jobs.find(x => x.id === id);
+  if (!a || !b) return;
+  const stage = stageOf(b);
+  if (!stage) return;
+  e.preventDefault(); e.stopPropagation();
+  const before = dropsBefore(e, false);
+  const changedStage = !stage.match.includes(a.status);
+  if (changedStage) a.status = stage.set;
+  // Reorder the column as it was DRAWN; a card arriving from elsewhere was not in it yet.
+  const drawn = (lastKanOrder[stage.key] || []).slice();
+  const rest = drawn.filter(x => x !== a.id);
+  if (rest.indexOf(id) < 0) return;
+  const at = rest.indexOf(id);
+  const target = before ? id : (at + 1 < rest.length ? rest[at + 1] : null);
+  stampKanOrder(reinsert(rest.concat(a.id), a.id, target));
+  dragJobId = null; clearDropMarks(); endJobDrag();
+  jobSort = 'manual';                       // you just placed it: respect it
+  saveState(); buildJobList();
+  if (changedStage) maybePromptContact(a);
+}
+// The cards of one column in the order they should be drawn: your own order when you
+// have placed them, otherwise whatever the sort dropdown says.
+function orderedStage(list) {
+  if (jobSort !== 'manual') return list;
+  return list.slice().sort((a, b) => (Number.isFinite(a.kanPos) ? a.kanPos : Infinity) - (Number.isFinite(b.kanPos) ? b.kanPos : Infinity));
+}
+// Roles in the order they should be drawn: your own order when you have placed them,
+// otherwise whatever the sort dropdown says.
+function orderedRoles(roles) {
+  if (jobSort !== 'manual') return roles;
+  return roles.slice().sort((a, b) => (Number.isFinite(a.rolePos) ? a.rolePos : Infinity) - (Number.isFinite(b.rolePos) ? b.rolePos : Infinity));
+}
+
+// One company, everything you know about it, and its open roles.
+// The roles are the draggable part: drop one on a kanban column to move it.
+// Company name, how many roles, and the roles. Nothing else: the research, the salary and the
+// review chips all live inside the role's card, and on a shelf you are scanning for a role,
+// not reading about the company.
+function companyCardHTML(name, roles) {
+  const first = roles[0] || {};
+  const flagged = roles.some(r => r.flagged);
+  const key = coKey(name) || ('#' + (first.id || 0));
+  const shownRoles = orderedRoles(roles);
+  lastRoleOrder[key] = shownRoles.map(r => r.id);
+  return `<div class="co-card${flagged ? ' flagged' : ''}" draggable="true"
+       ondragstart="coDragStart(event,'${escAttr(key)}')" ondragend="coDragEnd(event)"
+       ondragover="coDragOver(event,'${escAttr(key)}')" ondragleave="coDragLeave(event)" ondrop="coDrop(event,'${escAttr(key)}')"
+       title="Drag the card to move this company in the list">
+    <div class="co-head">
+      <span class="co-name" onclick="openJobModal(${first.id || 0})" title="Open the company card">${escHtml(name || '(no company)')}</span>
+      <span class="co-count">${roles.length} role${roles.length > 1 ? 's' : ''}</span>
+    </div>
+    <div class="co-roles">${shownRoles.map(coRoleHTML).join('') || '<div class="co-empty">No open roles here.</div>'}</div>
+  </div>`;
+}
+// A role inside a company card. Same drag payload as any other card, so the kanban
+// columns already accept it without knowing where it came from.
+function coRoleHTML(j) {
+  return `<div class="co-role" draggable="true" onclick="jobCardClick(event,${j.id})"
+       ondragstart="roleDragStart(event,${j.id})" ondragend="jobDragEnd(event)"
+       ondragover="roleDragOver(event,${j.id})" ondragleave="roleDragLeave(event)" ondrop="roleDrop(event,${j.id})"
+       title="${escAttr(j.role || 'Untitled role')} - drag onto a column to move it, or onto another role here to reorder">
+    <span class="cr-grip">⠿</span>
+    <span class="cr-title">${escHtml(j.role || '(untitled role)')}</span>
+    <span class="cr-meta">
+      <span class="jc-pri p-${(j.priority || '').toLowerCase()}" onclick="openJobPriMenu(event,${j.id})" title="Change importance">${escHtml(j.priority || '')}</span>
+      ${matchChipHTML(j)}
+    </span>
+    <span class="cr-actions">
+      <button class="icon-btn stage-btn" onclick="openStatusMenu(${j.id},event)" title="Move to a stage">➜</button>
+      <button class="icon-btn flag-btn${j.flagged ? ' on' : ''}" onclick="toggleFlag(event,${j.id})" title="Flag - pin to top">${j.flagged ? '🚩' : '⚑'}</button>
+      <button class="icon-btn cv-btn" onclick="cvAction(event,${j.id})" title="${hasCv(j) ? 'Open CV' : 'Attach a CV'}">${hasCv(j) ? '📄' : '📎'}</button>
+      <button class="icon-btn" onclick="archiveJob(event,${j.id})" title="Archive - not pursuing">📁</button>
+    </span>
+  </div>`;
+}
+// The 🏢 button opens the card straight on the Company tab.
+function openCompanyTab(e, id) {
+  e.stopPropagation();
+  if (!id) return;
+  openJobModal(id);
+  showJobTab('company');
+}
+
 function backlogCardHTML(j, extras) {
   const people = renderPeopleDisplay(j);
   const more = (extras && extras.length)
@@ -2206,6 +3185,7 @@ function backlogCardHTML(j, extras) {
     <div class="bc-footer">
       ${jobMetaPills(j)}
       <div class="jc-actions">
+        <button class="icon-btn stage-btn" onclick="openStatusMenu(${j.id},event)" title="Move to a stage — Applied, Interviewing…">➜</button>
         <button class="icon-btn flag-btn${j.flagged ? ' on' : ''}" onclick="toggleFlag(event,${j.id})" title="Flag — pin to top">${j.flagged ? '🚩' : '⚑'}</button>
         <button class="icon-btn" onclick="copyReach(event,${j.id})" title="Copy a reach-out message">✉️</button>
         <button class="icon-btn cv-btn" onclick="cvAction(event,${j.id})" title="${hasCv(j) ? ('Open CV' + (j.cvName ? ' — ' + escAttr(j.cvName) : '')) : 'Attach a CV (click to browse, or drop a file here)'}">${hasCv(j) ? '📄' : '📎'}</button>
@@ -2233,13 +3213,70 @@ function savedRowHTML(j, reason) {
       ${matchChipHTML(j)}
     </div>
     <span class="sv-actions">
-      <button class="icon-btn build-btn" onclick="event.stopPropagation();buildCv(${j.id})" title="Build CV from master">⚙</button>
       <button class="icon-btn" onclick="archiveJob(event,${j.id})" title="Archive — not pursuing">📁</button>
       <button class="icon-btn" onclick="event.stopPropagation();deleteJob(${j.id})" title="Delete">🗑️</button>
     </span>
   </div>`;
 }
 
+// What each move looks like in the log: an icon, and a colour for the KIND of move.
+//   blue    an email or a message you sent      purple  applied on their site
+//   red     a phone call or an interview        green   they came to you or answered
+const LOG_KIND = {
+  cold:      { cls:'m-sent',  icon:'\u2709\ufe0f',     label:'Message sent' },
+  referral:  { cls:'m-sent',  icon:'\ud83e\udd1d',     label:'Referral / introduction' },
+  followup:  { cls:'m-sent',  icon:'\ud83d\udd14',     label:'Follow-up sent' },
+  contact:   { cls:'m-sent',  icon:'\ud83d\udc64',     label:'Contact logged' },
+  site:      { cls:'m-apply', icon:'\ud83c\udf10',     label:'Applied on their site' },
+  screen:    { cls:'m-call',  icon:'\ud83d\udcde',     label:'Phone / screening call' },
+  interview: { cls:'m-call',  icon:'\ud83c\udfa4',     label:'Interview' },
+  inbound:   { cls:'m-in',    icon:'\ud83d\udce5',     label:'They reached out to me' },
+  reply:     { cls:'m-in',    icon:'\ud83d\udcac',     label:'They replied' },
+};
+// ── The day log ──────────────────────────────────────────────────────────────
+// Every move you made, newest day first, so the first thing you see when you open the board is
+// what you did today and what you did before that. Each chip is one step on one role; hover it
+// for the whole note. Days with nothing are simply absent.
+const LOG_DAYS = 6;                 // today plus five days back
+function dayLabel(iso) {
+  const d = daysSinceISO(iso);
+  if (d === 0) return 'Today';
+  if (d === 1) return 'Yesterday';
+  return fmtDate(iso);
+}
+function dayLogHTML() {
+  const rows = {};
+  jobs.forEach(j => {
+    if (j.archived) return;
+    flowSteps(j).forEach(s => {
+      if (!s.on) return;
+      const age = daysSinceISO(s.on);
+      if (age === null || age < 0 || age >= LOG_DAYS) return;
+      (rows[s.on] = rows[s.on] || []).push({ j, s });
+    });
+  });
+  const days = Object.keys(rows).sort().reverse();
+  if (!days.length) return '';
+  const total = days.reduce((n, d) => n + rows[d].length, 0);
+  const body = days.map(d => {
+    const items = rows[d].map(({ j, s }) => {
+      const k = stepKind(s.kind);
+      const tip = [j.company, j.role, LOG_KIND[s.kind] ? LOG_KIND[s.kind].label : k.label,
+                   String(s.who || '').trim(), s.on ? fmtDate(s.on) : '', s.label, s.note]
+                   .map(x => String(x || '').trim()).filter(Boolean).join(' · ');
+      const c = LOG_KIND[s.kind] || LOG_KIND.contact;
+      return `<span class="dl-chip ${c.cls}" title="${escAttr(tip)}" onclick="openJobModal(${j.id})">`
+           + `${c.icon} <b>${escHtml(j.company || '')}</b></span>`;
+    }).join('');
+    return `<div class="dl-day"><span class="dl-when">${escHtml(dayLabel(d))}</span>`
+         + `<div class="dl-items">${items}</div></div>`;
+  }).join('');
+  return `<div class="daylog">
+    <div class="dl-head">🗓 What you have been doing <span class="kcnt">${total}</span>
+      <span class="dl-hint">last ${LOG_DAYS} days · click a chip to open the role</span></div>
+    ${body}
+  </div>`;
+}
 function buildJobList() {
   hideFitTip();   // cards are about to be replaced; a hovering tip would otherwise stay stuck
   const host = document.getElementById('jobList');
@@ -2248,13 +3285,16 @@ function buildJobList() {
   const live = ordered.filter(j => !j.archived);
   const manualArchived = ordered.filter(j => j.archived);
   const cols = JOB_STAGES.map(stage => {
-    const inStage = live.filter(j => stage.match.includes(j.status));
-    return `<div class="kcol kcol-${stage.key}" style="--kc:${stage.color}">
+    const inStage = orderedStage(live.filter(j => stage.match.includes(j.status)));
+    lastKanOrder[stage.key] = inStage.map(j => j.id);
+    return `<div class="kcol kcol-${stage.key}" style="--kc:${stage.color}" ondragover="jobDragOver(event)" ondragleave="jobDragLeave(event)" ondrop="jobDrop(event,'${stage.set}')">
       <div class="kcol-head">${stage.label} <span class="kcnt">${inStage.length}</span></div>
       <div class="kcol-body" ondragover="jobDragOver(event)" ondragleave="jobDragLeave(event)" ondrop="jobDrop(event,'${stage.set}')">${inStage.length ? inStage.map(jobCardHTML).join('') : '<div class="kcol-empty">—</div>'}</div>
     </div>`;
   }).join('');
-  const saved = live.filter(j => j.status === 'Saved');
+  const q = jobSearch.trim().toLowerCase();
+  const allSaved = live.filter(j => j.status === 'Saved');
+  const saved = q ? allSaved.filter(j => jobMatchesSearch(j, q)) : allSaved;
   // Companies already in the active pipeline — their other Saved roles fold into the hidden drawer.
   const appliedCos = new Set(live.filter(j => ACTIVE_STAGES.includes(j.status)).map(j => (j.company || '').trim().toLowerCase()).filter(Boolean));
   // Hidden drawer keeps the applied/old roles. Then group the rest by company: ONE card per company
@@ -2263,37 +3303,66 @@ function buildJobList() {
   const savedReason = {};
   const archivedSaved = [], notHidden = [];
   saved.forEach(j => {
-    const r = savedArchiveReason(j, appliedCos);
+    // A search should surface everything it matches, so nothing folds into Hidden while searching.
+    const r = q ? '' : savedArchiveReason(j, appliedCos);
     savedReason[j.id] = r;
     (r ? archivedSaved : notHidden).push(j);
   });
+  // One importance at a time (High / Medium / Low), unless you are searching, in which case
+  // you are hunting a specific role and the filter would just hide it.
+  const priCounts = { High: 0, Medium: 0, Low: 0 };
+  notHidden.forEach(j => { const p = PRI_TABS.includes(j.priority) ? j.priority : 'Low'; priCounts[p]++; });
+  const inPri = q ? notHidden : notHidden.filter(j => (PRI_TABS.includes(j.priority) ? j.priority : 'Low') === savedPri);
+  const priTabsHTML = q ? '' : `<div class="pri-tabs">${PRI_TABS.map(p =>
+    `<button class="pri-tab p-${p.toLowerCase()}${savedPri === p ? ' on' : ''}" onclick="setSavedPri('${p}')"
+             title="Show the ${p.toLowerCase()}-importance roles">${p}<span class="pt-n">${priCounts[p]}</span></button>`).join('')}</div>`;
   const coGroups = {};
-  notHidden.forEach(j => { const k = (j.company || '').trim().toLowerCase() || ('#' + j.id); (coGroups[k] = coGroups[k] || []).push(j); });
-  const extrasByPrimary = {};
+  inPri.forEach(j => { const k = (j.company || '').trim().toLowerCase() || ('#' + j.id); (coGroups[k] = coGroups[k] || []).push(j); });
+  // Not searching: one COMPANY card per company, holding its roles. Searching: one card per
+  // match, because then you are looking for a specific role, not browsing companies.
+  const coCards = [];
   const activeSaved = [];
   const doneCo = new Set();
-  notHidden.forEach(j => {
+  if (q) {
+    activeSaved.push(...notHidden);
+  } else inPri.forEach(j => {
     const k = (j.company || '').trim().toLowerCase() || ('#' + j.id);
     if (doneCo.has(k)) return; doneCo.add(k);
     const group = coGroups[k];
-    const primary = group.find(x => x.flagged) || group[0];
-    extrasByPrimary[primary.id] = group.filter(x => x.id !== primary.id);
-    activeSaved.push(primary);
+    coCards.push({ name: (group[0].company || '').trim(), roles: group,
+                   flagged: group.some(x => x.flagged) });
   });
-  activeSaved.sort((a, b) => (b.flagged ? 1 : 0) - (a.flagged ? 1 : 0)); // flagged pinned to top (stable otherwise)
+  if (jobSort === 'manual') coCards.sort((a, b) => coPosOf(a.roles) - coPosOf(b.roles));
+  else coCards.sort((a, b) => (b.flagged ? 1 : 0) - (a.flagged ? 1 : 0)); // a flagged role pins its company
+  // Remember the drawn order: a drop reads it to work out where "before this one" is.
+  lastCoOrder = coCards.map(c => coKey(c.name) || ('#' + (c.roles[0] || {}).id));
   const opt = (v, l) => `<option value="${v}"${jobSort === v ? ' selected' : ''}>${l}</option>`;
-  const sortSelect = `<select class="saved-sort" onchange="setJobSort(this.value)" title="Sort saved roles">${opt('priority', 'Importance')}${opt('compat', 'Best fit')}${opt('company', 'Company A–Z')}${opt('newest', 'Recently added')}</select>`;
+  const sortSelect = `<select class="saved-sort" onchange="setJobSort(this.value)" title="Sort saved roles">${opt('priority', 'Importance')}${opt('compat', 'Best fit')}${opt('company', 'Company A–Z')}${opt('newest', 'Recently added')}${opt('manual', 'My order')}</select>`;
+  const searchBox = `<div class="saved-search${q ? ' on' : ''}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="jobSearchInput" value="${escAttr(jobSearch)}" placeholder="Search saved roles"
+      oninput="setJobSearch(this.value)"
+      onkeydown="if(event.key==='Escape'){event.stopPropagation();clearJobSearch();}"
+      title="Company, role, notes, description, contacts">
+    ${q ? `<button class="ss-clear" onclick="clearJobSearch()" title="Clear search">×</button>` : ''}
+  </div>`;
   const savedHTML = `<div class="saved-section">
-    <div class="saved-head">💾 Saved <span class="kcnt">${activeSaved.length}</span>
-      <button class="cv-master-btn" onclick="openMasterCV()" title="Master CV"><span class="cv-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></span><span class="cv-lbl">Master CV</span></button>
+    <div class="saved-head">💾 Saved <span class="kcnt">${q ? activeSaved.length + ' of ' + allSaved.length : coCards.length + ' compan' + (coCards.length === 1 ? 'y' : 'ies')}</span>
       <div class="saved-head-actions">
+        ${searchBox}
         <span class="sort-lbl">Sort</span>
         ${sortSelect}
         <button class="cv-master-btn" onclick="openFindModal()" title="Find roles — search the web for new openings and add them here"><span class="cv-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><span class="cv-lbl">Find roles</span></button>
         <button class="btn" onclick="openJobModal()">+ Role</button>
       </div>
     </div>
-    <div class="saved-list saved-cards" ondragover="jobDragOver(event)" ondragleave="jobDragLeave(event)" ondrop="jobDrop(event,'Saved')">${activeSaved.length ? activeSaved.map(j => backlogCardHTML(j, extrasByPrimary[j.id])).join('') : '<div class="kcol-empty">No saved roles. Drag a role here to park it.</div>'}</div>
+    ${priTabsHTML}
+    ${q ? '' : '<div class="co-hint">One card per company. Drag a card to reorder the list, a role onto another role to reorder it, or a role onto a column above to move it. Drop it on a card up there to place it exactly where you want.</div>'}
+    <div class="saved-list saved-cards${q ? '' : ' co-grid'}" ondragover="jobDragOver(event)" ondragleave="jobDragLeave(event)" ondrop="jobDrop(event,'Saved')">${
+      q ? (activeSaved.length ? activeSaved.map(j => backlogCardHTML(j)).join('')
+                              : `<div class="kcol-empty">Nothing in Saved matches "${escHtml(jobSearch)}".</div>`)
+        : (coCards.length ? coCards.map(c => companyCardHTML(c.name, c.roles)).join('')
+                          : `<div class="kcol-empty">Nothing at <b>${savedPri}</b> importance. Try another tab, or drag a role here to park it.</div>`)}</div>
   </div>`;
   const archiveHTML = archivedSaved.length ? `<div class="saved-section archive-section">
     <div class="saved-head archive-head" onclick="toggleArchived()">
@@ -2309,7 +3378,25 @@ function buildJobList() {
     </div>
     ${showManualArchive ? `<div class="saved-list archive-list">${manualArchived.map(archivedRowHTML).join('')}</div>` : ''}
   </div>` : '';
-  host.innerHTML = `<div class="kanban">${cols}</div>${savedHTML}${archiveHTML}${manualArchiveHTML}`;
+  // Typing in the search box re-renders the whole board, which destroys the focused input and
+  // shortens the page. Capture what the browser is about to throw away, then put it back:
+  // caret position, focus, and the scroll offset. focus({preventScroll}) is the important part —
+  // a plain focus() scrolls the field into view and yanks the page to the top.
+  const active = document.activeElement;
+  const wasSearching = !!active && active.id === 'jobSearchInput';
+  const caret = wasSearching ? [active.selectionStart, active.selectionEnd] : null;
+  const scrollY = window.scrollY;
+
+  host.innerHTML = `${dayLogHTML()}<div class="kanban">${cols}</div>${savedHTML}${archiveHTML}${manualArchiveHTML}`;
+
+  if (wasSearching) {
+    const si = document.getElementById('jobSearchInput');
+    if (si) {
+      si.focus({ preventScroll: true });
+      try { si.setSelectionRange(caret[0], caret[1]); } catch (_) {}
+    }
+    window.scrollTo({ top: scrollY, behavior: 'instant' });
+  }
 }
 
 // Click a card/row (but not a button, link or the status badge) to edit it.
@@ -2319,28 +3406,72 @@ function jobCardClick(e, id) {
   openJobModal(id);
 }
 
-// ── Drag & drop (desktop): move a card between columns / the Saved list. ──
+// ── Drag & drop (desktop/mouse only): move a card between columns / the Saved list. ──
+// Touch devices get no HTML5 drag at all, and on a long board the kanban scrolls off screen,
+// so every card also carries the ➜ stage picker (openStatusMenu) as the non-drag path.
 let jobDragged = false;
 function jobDragStart(e, id) {
   jobDragged = true;
+  dragJobId = id;
   e.dataTransfer.setData('text/plain', String(id));
   e.dataTransfer.effectAllowed = 'move';
   e.currentTarget.classList.add('dragging');
+  document.body.classList.add('dragging-job');           // opens the collapsed Rejected strip
+  dragScrollStart();                                     // let the drag reach the kanban from far down the page
+}
+function endJobDrag() {
+  document.body.classList.remove('dragging-job');
+  document.querySelectorAll('.drop-hot').forEach(el => el.classList.remove('drop-hot'));
+  dragScrollStop();
+}
+
+// Auto-scroll while a card is in flight: the Saved backlog sits well below the kanban, and a
+// native drag does not scroll the page on its own, so the Applied column can be unreachable.
+let dragPointerY = null, dragScrollRAF = null, dragOverKcol = false;
+function dragTrackY(e) {
+  dragPointerY = e.clientY;
+  // Once a kanban column is under the cursor, stop scrolling: you are aiming, not travelling.
+  // Otherwise a column sitting in the edge zone would slide away as you tried to drop on it.
+  dragOverKcol = !!(e.target && e.target.closest && e.target.closest('.kcol'));
+}
+function dragScrollStep() {
+  const h = window.innerHeight, zone = 80, max = 26;
+  if (dragPointerY !== null && !dragOverKcol) {
+    let dy = 0;
+    if (dragPointerY < zone) dy = -max * (1 - dragPointerY / zone);
+    else if (dragPointerY > h - zone) dy = max * (1 - (h - dragPointerY) / zone);
+    if (dy) window.scrollBy(0, dy);
+  }
+  dragScrollRAF = requestAnimationFrame(dragScrollStep);
+}
+function dragScrollStart() {
+  document.addEventListener('dragover', dragTrackY);
+  document.addEventListener('dragend', dragScrollStop, { once: true });  // safety net if a drag ends off-card
+  if (!dragScrollRAF) dragScrollRAF = requestAnimationFrame(dragScrollStep);
+}
+function dragScrollStop() {
+  document.removeEventListener('dragover', dragTrackY);
+  dragPointerY = null; dragOverKcol = false;
+  if (dragScrollRAF) { cancelAnimationFrame(dragScrollRAF); dragScrollRAF = null; }
 }
 function jobDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
-  document.querySelectorAll('.drop-hot').forEach(el => el.classList.remove('drop-hot'));
+  dragJobId = null; dragRoleId = null; clearDropMarks();
+  endJobDrag();
   setTimeout(() => { jobDragged = false; }, 0);         // let the trailing click be suppressed first
 }
 function jobDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drop-hot'); }
 function jobDragLeave(e) { e.currentTarget.classList.remove('drop-hot'); }
 function jobDrop(e, status) {
   e.preventDefault();
+  e.stopPropagation();                                   // the column wraps the body: only handle it once
   e.currentTarget.classList.remove('drop-hot');
+  endJobDrag();
   const id = Number(e.dataTransfer.getData('text/plain'));
   const j = jobs.find(x => x.id === id);
   if (!j || j.status === status) return;
   j.status = status;
+  delete j.kanPos;               // dropped on the column itself, not on a card: it lands at the end
   saveState(); buildJobList();
   maybePromptContact(j);
 }
@@ -2403,22 +3534,507 @@ function saveContactPrompt() {
   const date = document.getElementById('ct-date').value || todayISO();
   const chosen = ctPeople.filter(p => p.checked && (p.name || p.title));
   if (!chosen.length) { closeContactModal(); return; }   // nothing marked → treat as Skip
-  if (!Array.isArray(j.people)) j.people = jobPeople(j).map(p => ({ name:p.name||'', title:p.title||'', info:p.info||'' }));
-  // Mark who was contacted, then float them to the top (first chosen = principal).
-  const chosenObjs = [];
+  // The prompt writes into the FLOW, not into people[]: a contact is a step you took.
+  // Someone already in the flow just gets the date; anyone new is appended, and the
+  // extra names are marked parallel because they all went out the same day.
+  if (!Array.isArray(j.steps)) normalizeSteps(j);
+  let added = 0;
   chosen.forEach(c => {
-    let existing = c.name ? j.people.find(p => (p.name||'').toLowerCase() === c.name.toLowerCase()) : null;
-    if (!existing) { existing = { name:c.name, title:c.title, info:c.info||'' }; j.people.push(existing); }
-    existing.contactedOn = date;
-    chosenObjs.push(existing);
+    const existing = c.name ? j.steps.find(s => (s.who || '').toLowerCase() === c.name.toLowerCase()) : null;
+    if (existing) { if (!existing.on) existing.on = date; return; }
+    j.steps.push({ kind:'contact', who:c.name, title:c.title, on:date, note:c.info || '', par: added > 0 });
+    added++;
   });
-  const rest = j.people.filter(p => !chosenObjs.includes(p));
-  j.people = [...chosenObjs, ...rest];
-  j.people.forEach((p, i) => { if (i === 0) p.primary = true; else delete p.primary; });   // top = principal
+  if (j.steps.length) j.steps[0].par = false;
+  j.people = peopleFromFlow(j.steps, j.interviewHr, j.interviewHm);
   if (!j.appliedOn) j.appliedOn = date;
   j.contact = j.people.map(p => p.name + (p.title ? ' - ' + p.title : '')).join('\n');   // keep legacy field in sync
   saveState(); closeContactModal(); buildJobList();
 }
+// ══════════════════════════════════════════════════════════════
+// THE JOB CARD - three tabs. General is the role and how you got in,
+// Company is shared by every role at that company, Interviews is the people.
+// ══════════════════════════════════════════════════════════════
+const JOB_TABS = ['general', 'company', 'people'];
+let jobTab = 'general';
+function showJobTab(t) {
+  jobTab = JOB_TABS.includes(t) ? t : 'general';
+  JOB_TABS.forEach(x => {
+    const pane = document.getElementById('pane-' + x), tab = document.getElementById('tab-' + x);
+    if (pane) pane.classList.toggle('on', x === jobTab);
+    if (tab) tab.classList.toggle('on', x === jobTab);
+  });
+}
+// The Interviews tab carries a count so you can see there are people on it without opening it.
+// There are only ever two: the HR interviewer and the hiring manager.
+function refreshTabCounts() {
+  const n = document.getElementById('tab-people-n'); if (!n) return;
+  const filled = ['f-hr-name', 'f-hm-name']
+    .filter(id => { const el = document.getElementById(id); return el && String(el.value || '').trim(); }).length;
+  n.textContent = filled ? String(filled) : '';
+}
+
+const CO_FIELDS = ['about', 'history', 'news', 'glassdoor', 'indeed'];
+function coKey(name) { return String(name || '').trim().toLowerCase(); }
+function companyRoles(name) { const k = coKey(name); return k ? jobs.filter(j => coKey(j.company) === k) : []; }
+// What we know about a company is a property of the COMPANY, not of one posting: read the
+// first role that has each field filled, so a second role at the same company starts informed.
+function companyInfo(name) {
+  const out = {};
+  const roles = companyRoles(name);
+  CO_FIELDS.forEach(f => { const hit = roles.find(j => String(j[f] || '').trim()); out[f] = hit ? hit[f] : ''; });
+  return out;
+}
+// ...and write it back to every role at that company, so they never disagree.
+function applyCompanyInfo(name, data, exceptId) {
+  companyRoles(name).forEach(j => {
+    if (j.id === exceptId) return;
+    CO_FIELDS.forEach(f => { if (data[f] !== undefined) j[f] = data[f]; });
+  });
+}
+function refreshCoSharedHint() {
+  const el = document.getElementById('f-co-shared'); if (!el) return;
+  const n = companyRoles(document.getElementById('f-company').value).filter(j => j.id !== editingJob).length;
+  el.textContent = n ? '- shared with your ' + n + ' other role' + (n > 1 ? 's' : '') + ' here' : '';
+}
+
+// ══════════════════════════════════════════════════════════════
+// THE FLOW - the story of one application, in the order it happened
+//
+// A hunt is never "applied on the site" or "cold outreach", it is both, in some
+// order, with people handing you to other people in between. So the card holds a
+// LIST OF STEPS instead of a single method: who you wrote to, what came back, who
+// they referred you to, and what you did in parallel. `steps[]` is the record;
+// `people[]` is derived from it (see peopleFromFlow) so the cards, the follow-up
+// clock and the outreach generator keep reading the same field they always did.
+// ══════════════════════════════════════════════════════════════
+const STEP_KINDS = [
+  { id:'site',      icon:'🌐', label:'Applied on their site',   short:'Applied online'  },
+  { id:'cold',      icon:'✉️', label:'Cold outreach to a person', short:'Cold outreach' },
+  { id:'referral',  icon:'🤝', label:'Referral / introduction',  short:'Referral'       },
+  { id:'inbound',   icon:'📥', label:'They reached out to me',   short:'They reached out'},
+  { id:'contact',   icon:'👤', label:'Contact logged',           short:'Contact'        },
+  { id:'reply',     icon:'💬', label:'They replied',             short:'Replied'        },
+  { id:'followup',  icon:'🔔', label:'Follow-up sent',           short:'Follow-up'      },
+  { id:'screen',    icon:'📞', label:'Screening call',           short:'Screening call' },
+  { id:'interview', icon:'🎤', label:'Interview',                short:'Interview'      },
+];
+// How you got IN: the kinds that answer "where did this application come from".
+const ENTRY_KINDS = ['site', 'cold', 'referral', 'inbound'];
+// Kinds where the move was yours, so the ball is now in their court.
+const WAITING_KINDS = ['site', 'cold', 'referral', 'followup', 'contact'];
+// Kinds that are you touching a human, which is what the follow-up clock counts.
+const OUTBOUND_KINDS = ['site', 'cold', 'referral', 'followup', 'contact'];
+function stepKind(id) { return STEP_KINDS.find(k => k.id === id) || STEP_KINDS[4]; }
+function flowSteps(j) { return Array.isArray(j && j.steps) ? j.steps : []; }
+
+// One-time migration off the old single `contactMethod` + flat people list.
+// Idempotent: an existing `steps` array is only cleaned, never rebuilt.
+function normalizeSteps(j) {
+  if (Array.isArray(j.steps)) {
+    j.steps = j.steps.map(s => ({
+      kind: STEP_KINDS.some(k => k.id === s.kind) ? s.kind : 'contact',
+      who:  String(s.who  || ''), title: String(s.title || ''),
+      // `label` is the step's own short headline, the one thing you read when it is collapsed.
+      // `title` stays what it always was, the PERSON's title on older records.
+      label: String(s.label || ''),
+      on:   String(s.on   || ''), note:  String(s.note  || ''), par: !!s.par,
+    }));
+    // A step with nothing in it is not history, it is noise: migrations and half-finished rows
+    // leave them behind. Dropped on load; the editor keeps whatever you are still typing into.
+    // A stored date that is not a real date sorts the history into nonsense: drop it, keep the step.
+    j.steps.forEach(x => { if (x.on && !validISO(x.on)) x.on = ''; });
+    j.steps = j.steps.filter(x => x.who || x.title || x.label || x.note || x.on);
+    if (j.steps.length) j.steps[0].par = false;   // nothing can be parallel to nothing
+    return;
+  }
+  const steps = [];
+  const people = jobPeople(j);
+  const method = ENTRY_KINDS.includes(j.contactMethod) ? j.contactMethod : '';
+  const lead = people[0] || {};
+  if (method) {
+    steps.push({ kind: method,
+                 who:   method === 'site' ? '' : (lead.name  || ''),
+                 title: method === 'site' ? '' : (lead.title || ''),
+                 label: '',
+                 on: j.appliedOn || lead.contactedOn || '',
+                 note: method === 'site' ? '' : (lead.info || ''), par: false });
+  } else if (j.appliedOn) {
+    steps.push({ kind: 'site', who:'', title:'', label:'', on: j.appliedOn, note:'', par: false });
+  }
+  // Everyone else already on the card becomes a logged contact, in the stored order.
+  people.forEach((p, i) => {
+    if (i === 0 && method && method !== 'site') return;          // already the first step
+    if (!p.name && !p.title && !p.info) return;
+    steps.push({ kind:'contact', who: p.name || '', title: p.title || '', label: '',
+                 on: p.contactedOn || '', note: p.info || '', par: false });
+  });
+  j.steps = steps;
+  if (j.interviewHr === undefined) j.interviewHr = { name:'', title:'', info:'' };
+  if (j.interviewHm === undefined) j.interviewHm = { name:'', title:'', info:'' };
+}
+function ivPerson(p) {
+  p = p || {};
+  return { name: String(p.name || ''), title: String(p.title || ''), info: String(p.info || '') };
+}
+// Anything that pushes straight into `people` (healDemoJobs curates recruiters there, and
+// it runs after the migration) would otherwise never show up in the flow. This folds any
+// person the flow does not already know about onto the end of it. Idempotent, and it
+// cannot resurrect someone you deleted: people[] is rebuilt from the flow on save.
+function foldPeopleIntoFlow(j) {
+  if (!Array.isArray(j.steps)) return;
+  const known = new Set(j.steps.map(s => String(s.who || '').trim().toLowerCase()).filter(Boolean));
+  jobPeople(j).forEach(p => {
+    const key = String(p.name || '').trim().toLowerCase();
+    if (!key || known.has(key)) return;
+    known.add(key);
+    j.steps.push({ kind:'contact', who: p.name || '', title: p.title || '',
+                   on: p.contactedOn || '', note: p.info || '', par: false });
+  });
+}
+
+// `people[]` is DERIVED from the flow plus the two interviewers, so there is exactly
+// one record of each human no matter how many times they show up in the story.
+function peopleFromFlow(steps, hr, hm) {
+  const out = [];
+  const find = name => { const k = name.trim().toLowerCase();
+                         return k ? out.find(p => (p.name || '').trim().toLowerCase() === k) : null; };
+  const add = (name, title, info, on) => {
+    name = String(name || '').trim(); title = String(title || '').trim(); info = String(info || '').trim();
+    if (!name && !title) return;                        // a note with nobody attached is not a person
+    const seen = find(name);
+    if (seen) {                                         // same human, later step: fill the gaps
+      if (title && !seen.title) seen.title = title;
+      if (info && !seen.info)   seen.info  = info;
+      if (on && (!seen.contactedOn || on < seen.contactedOn)) seen.contactedOn = on;
+      return;
+    }
+    const p = { name, title, info };
+    if (on) p.contactedOn = on;
+    out.push(p);
+  };
+  (steps || []).forEach(s => add(s.who, s.title, s.note,
+                                 OUTBOUND_KINDS.includes(s.kind) ? s.on : ''));
+  add(ivPerson(hr).name, ivPerson(hr).title, ivPerson(hr).info);
+  add(ivPerson(hm).name, ivPerson(hm).title, ivPerson(hm).info);
+  out.forEach((p, i) => { if (i === 0) p.primary = true; else delete p.primary; });
+  return out;
+}
+
+// ── Where the process stands ──
+// The LAST ROW is the current state: the list is the order you put things in, and
+// the strip reads left to right, so the end of it is where you are.
+function processStart(j, steps) {
+  const ds = (steps || flowSteps(j)).map(s => s.on).filter(Boolean);
+  if (j && j.appliedOn) ds.push(j.appliedOn);
+  return ds.length ? ds.slice().sort()[0] : null;        // ISO dates sort chronologically
+}
+function lastMoveDate(j, steps) {
+  const ds = (steps || flowSteps(j)).map(s => s.on).filter(Boolean);
+  return ds.length ? ds.slice().sort().pop() : null;
+}
+function daysSinceISO(d) { const n = d ? daysTo(d) : null; return n === null ? null : Math.max(0, -n); }
+const STEP_STATE = {
+  site:      { cls:'wait', label:'Applied, waiting'        },
+  cold:      { cls:'wait', label:'Outreach sent, waiting'  },
+  referral:  { cls:'wait', label:'Referred, waiting'       },
+  contact:   { cls:'wait', label:'Contact made, waiting'   },
+  followup:  { cls:'wait', label:'Followed up, waiting'    },
+  inbound:   { cls:'live', label:'They came to you'        },
+  reply:     { cls:'live', label:'In conversation'         },
+  screen:    { cls:'live', label:'Screening call'          },
+  interview: { cls:'live', label:'Interviewing'            },
+};
+function processState(j, steps) {
+  const list = steps || flowSteps(j);
+  const st = (j && j.status) || 'Saved';
+  if (st === 'Offer')    return { cls:'live',   label:'Offer on the table' };
+  if (st === 'Rejected') return { cls:'closed', label:'Closed'             };
+  if (!list.length)      return { cls:'none',   label:'Not started'        };
+  return STEP_STATE[list[list.length - 1].kind] || STEP_STATE.contact;
+}
+// The banner: where it stands, when it started, and what day of it you are on.
+function procBannerHTML(j, steps) {
+  const list = steps || flowSteps(j);
+  const s = processState(j, list);
+  let html = `<span class="proc-state ${s.cls}">${escHtml(s.label)}</span>`;
+  const start = processStart(j, list);
+  if (start) {
+    const d = daysSinceISO(start);
+    html += `<span class="proc-meta">started <b>${escHtml(fmtDate(start))}</b>`
+          + (d === null ? '' : ` · <b>day ${d + 1}</b>`) + `</span>`;
+  } else if (list.length) {
+    html += `<span class="proc-meta">no dates logged yet</span>`;
+  }
+  // Quiet only means something while the ball is in their court.
+  const quiet = daysSinceISO(lastMoveDate(j, list));
+  if (s.cls === 'wait' && quiet !== null && quiet >= FOLLOWUP_DAYS) {
+    html += `<span class="proc-quiet">· quiet ${quiet} days</span>`;
+  }
+  return html;
+}
+// The compact path used to appear on a card on hover. the user asked for it to go: the history
+// belongs in the card you open, not under the cursor. `flowStripHTML` went with it.
+
+// ── The flow editor (job modal) ──
+let modalSteps = [];
+let modalHr = { name:'', title:'', info:'' };
+let modalHm = { name:'', title:'', info:'' };
+// ── The step organiser ────────────────────────────────────────────────────────
+// A step is a note and a date. That is the whole model. The date decides where it sits,
+// so there is nothing to drag and no order to maintain by hand: type what happened, say
+// when, and the history writes itself. The kind (how it happened) is one small chip, kept
+// because the rest of the app reads it: `contactMethod`, the process banner, `appliedOn`.
+function sortSteps(list) {
+  // Undated steps sink to the end rather than jumping to 1970. Equal dates keep the order
+  // they were added in, so three moves on one day still read the way they happened.
+  return list.map((s, i) => [s, i]).sort((a, b) => {
+    const da = a[0].on || '9999-99-99', db = b[0].on || '9999-99-99';
+    return da === db ? a[1] - b[1] : (da < db ? -1 : 1);
+  }).map(p => p[0]);
+}
+// A step is collapsed to one line: its own short title and the date. Hovering shows the whole
+// note (no scrolling, no clipping), clicking opens it for editing. Only one is open at a time,
+// which is what keeps a long history short enough to read without a scrollbar.
+let openStepIdx = -1;
+function stepBubbleEditorHTML(s, i) {
+  const k = stepKind(s.kind);
+  const open = openStepIdx === i;
+  const opts = STEP_KINDS.map(x => `<option value="${x.id}"${x.id === s.kind ? ' selected' : ''}>${x.icon} ${escHtml(x.label)}</option>`).join('');
+  const when = s.on ? fmtDate(s.on) : 'no date';
+  // A migrated contact has a name but no headline, and showing just "Contact" made it look like
+  // an empty row. Fall back to the kind plus who it was.
+  const whoName = String(s.who || '').trim();
+  const head = String(s.label || '').trim() || (whoName ? k.short + ' · ' + whoName : k.short);
+  const editor = `<div class="tl-edit" onclick="event.stopPropagation()">
+      <input class="tl-lbl" placeholder="Short title" value="${escAttr(s.label || '')}"
+             oninput="modalSteps[${i}].label=this.value" title="A few words: what this step was">
+      <input class="tl-date" type="date" value="${escAttr(s.on)}" title="When it happened"
+             oninput="setStepDate(${i}, this.value, this, false)" onchange="setStepDate(${i}, this.value, this, true)">
+      <select class="tl-kind" title="What kind of move this was"
+              onchange="modalSteps[${i}].kind=this.value; renderFlow()">${opts}</select>
+      <button type="button" class="icon-btn tl-del" onclick="removeStep(${i})" title="Remove this step">🗑️</button>
+      <textarea class="tl-note" rows="3" placeholder="What happened. Who you dealt with, what they said, what you sent…"
+                oninput="modalSteps[${i}].note=this.value">${escHtml(s.note)}</textarea>
+    </div>`;
+  return `<div class="tl-item k-${k.id}${open ? ' open' : ''}">
+    <span class="tl-rail"><span class="tl-dot" title="${escAttr(k.label)}">${k.icon}</span></span>
+    <div class="tl-bub" onclick="toggleStep(${i})" title="${open ? 'Click to close' : 'Click to edit'}">
+      <div class="tl-head">
+        <span class="tl-title">${escHtml(head)}</span>
+        <span class="tl-when">${escHtml(when)}</span>
+      </div>
+      ${open ? editor : (s.note ? `<div class="tl-read">${escHtml(s.note)}</div>` : '')}
+    </div>
+  </div>`;
+}
+// Opening or closing a step is also when the list re-sorts: a date you just typed takes effect
+// the moment you are done with it, not while you are still typing it.
+function toggleStep(i) { openStepIdx = (openStepIdx === i ? -1 : i); renderFlow(); }
+// The banner and the name list are read-only, so they are safe to redraw on any keystroke.
+// The bubbles are NOT: re-rendering them while you type takes the caret with it, which is
+// why the note field only writes to the model and nothing else.
+function refreshFlowStrip() {
+  const banner = document.getElementById('f-proc');
+  if (banner) banner.innerHTML = procBannerHTML({ status: (document.getElementById('f-status') || {}).value }, modalSteps);
+  const dl = document.getElementById('f-flownames');
+  if (dl) dl.innerHTML = modalSteps.map(s => String(s.who || '').trim()).filter(Boolean)
+    .filter((n, i, a) => a.indexOf(n) === i).map(n => `<option value="${escAttr(n)}">`).join('');
+}
+function renderFlow() {
+  modalSteps = sortSteps(modalSteps);                 // stored oldest first: everything downstream
+  if (modalSteps.length) modalSteps[0].par = false;   // (contactMethod, appliedOn, the card path) reads it that way
+  const host = document.getElementById('f-flowtimeline');
+  // Shown newest first, because the thing you came to read is what just happened. The model
+  // index rides along, so every handler still points at the right step.
+  // Undated steps stay at the BOTTOM: they sink to the end of the chronological model, and a
+  // plain reverse would flip them to the top, which is how a migrated contact with no date ended
+  // up above a real application on the Xona card.
+  const idx = modalSteps.map((s, i) => [s, i]);
+  const view = idx.filter(([x]) => x.on).reverse().concat(idx.filter(([x]) => !x.on));
+  if (host) host.innerHTML = view.length ? view.map(([s, i]) => stepBubbleEditorHTML(s, i)).join('')
+    : '<div class="flow-empty">Nothing logged yet. Add the first move you made.</div>';
+  refreshFlowStrip();
+  refreshTabCounts();
+}
+function addStep() {
+  // A first step is how you got in; anything after it is most often the answer. Dated today, so
+  // it lands at the top, and opened straight away so you can type into it.
+  modalSteps.push({ kind: modalSteps.length ? 'reply' : 'site', who:'', title:'', label:'',
+                    on: todayISO(), note:'', par:false });
+  modalSteps = sortSteps(modalSteps);
+  openStepIdx = modalSteps.length - 1;
+  renderFlow();
+  const box = document.querySelector('.tl-item.open .tl-lbl');
+  if (box) box.focus();
+}
+// Changing a date is what re-files a step in the history, so this is the one edit that
+// redraws. Nothing is being typed into at that moment, so no caret is lost.
+// Writes the date and NOTHING else. Re-sorting here used to redraw the timeline between two
+// keystrokes, which ripped the field out of the DOM mid-edit: typing 09/09/2026 committed the
+// half-finished value and dropped the rest on the floor. The list re-sorts when the step closes.
+function setStepDate(i, v, el, commit) {
+  const s = modalSteps[i];
+  if (!s) return;
+  // Mid-typing, the field reports partial values AND reports empty while a fresh year is being
+  // entered. So `input` may only ever write a complete, plausible date, and only `change` (fired
+  // when the field is committed) is allowed to clear one. Otherwise typing a new date wipes the
+  // old one on the first keystroke.
+  if (!v && !commit) return;
+  if (v && !validISO(v)) { if (el) el.classList.add('bad'); return; }
+  if (el) el.classList.remove('bad');
+  s.on = v;
+  const item = el && el.closest ? el.closest('.tl-item') : null;
+  const when = item && item.querySelector('.tl-when');
+  if (when) when.textContent = v ? (fmtDate(v) || 'no date') : 'no date';   // the label, in place
+  refreshFlowStrip();                                        // the banner reads the dates
+}
+function removeStep(i) { modalSteps.splice(i, 1); openStepIdx = -1; renderFlow(); }
+// ── The CV, attached to the role ──────────────────────────────────────────────
+// It used to be a "Built CV link" text field you had to keep in sync by hand. Now the
+// file itself lives on the card: drop it in, and it is stored (base64, so it syncs and
+// reopens anywhere) and downloadable. `url` keeps any vault path a card already carried.
+let modalCv = { data:'', name:'', url:'' };
+function modalCvHasFile() { return !!modalCv.data; }
+function cvZoneHTML() {
+  if (!modalCv.data && !modalCv.url) {
+    return `<div class="cvz-empty" onclick="cvZonePick()" title="Choose a CV file">
+      <span class="cvz-ic">📄</span>
+      <span>Drop a CV here<span class="cvz-or"> or </span><u>choose a file</u></span>
+      <span class="cvz-sub">Stored on this role, so it syncs and opens anywhere. PDF, DOC or MD, under 4 MB.</span>
+    </div>`;
+  }
+  const name = modalCv.name || (modalCv.url ? String(modalCv.url).split(/[\\/]/).pop() : 'CV');
+  const kb = modalCv.data ? Math.round(modalCv.data.length * 0.75 / 1024) : 0;
+  const where = modalCv.data ? (kb + ' KB · stored on this role') : ('linked: ' + escHtml(modalCv.url));
+  return `<div class="cvz-file">
+    <span class="cvz-ic">📄</span>
+    <span class="cvz-name" title="${escAttr(name)}">${escHtml(name)}<span class="cvz-sub">${where}</span></span>
+    <span class="cvz-acts">
+      <button type="button" class="icon-btn" onclick="cvZoneDownload()" title="Download / open">⬇️</button>
+      <button type="button" class="icon-btn" onclick="cvZonePick()" title="Replace with another file">🔁</button>
+      <button type="button" class="icon-btn" onclick="cvZoneRemove()" title="Remove from this role">🗑️</button>
+    </span>
+  </div>`;
+}
+function renderCvZone() {
+  const z = document.getElementById('f-cvzone');
+  if (z) z.innerHTML = cvZoneHTML();
+}
+function cvZonePick() {
+  cvPickerJobId = '__modal';                       // sentinel: the file lands in the modal, not a card
+  const inp = document.getElementById('cvImportFile');
+  inp.value = ''; inp.click();
+}
+function cvZoneDragOver(e) {
+  if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+  e.preventDefault(); e.stopPropagation();
+  e.dataTransfer.dropEffect = 'copy';
+  e.currentTarget.classList.add('hot');
+}
+function cvZoneDragLeave(e) { e.currentTarget.classList.remove('hot'); }
+function cvZoneDrop(e) {
+  if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('hot');
+  readCvIntoModal(e.dataTransfer.files[0]);
+}
+// Read into the modal only. Nothing is written to the job until Save, so a dropped file
+// on a role you then cancel does not silently attach itself.
+function readCvIntoModal(file) {
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) { alert('That file is over 4 MB. Please attach a smaller PDF (a CV is usually well under 1 MB).'); return; }
+  const reader = new FileReader();
+  reader.onload = () => { modalCv.data = reader.result; modalCv.name = file.name; renderCvZone(); };
+  reader.onerror = () => alert('Could not read that file.');
+  reader.readAsDataURL(file);
+}
+function cvZoneDownload() {
+  const j = { cvData: modalCv.data, cvUrl: modalCv.url, cvName: modalCv.name };
+  if (j.cvData) {
+    try {   // a real download, named, rather than a blob tab you then have to save by hand
+      const [meta, b64] = j.cvData.split(',');
+      const mime = (meta.match(/data:([^;]+)/) || [, 'application/octet-stream'])[1];
+      const bin = atob(b64); const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([arr], { type: mime }));
+      const a = document.createElement('a');
+      a.href = url; a.download = j.cvName || 'cv.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    } catch (_) { /* fall through to a plain open */ }
+  }
+  openCv(j);
+}
+function cvZoneRemove() {
+  if (!confirm('Remove the CV from this role?')) return;
+  modalCv = { data:'', name:'', url:'' };
+  renderCvZone();
+}
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+// Edited here, as a plain list: name, title, description. The first one is the main
+// contact, which is what the star sets and what the cards show, so exactly one can
+// ever hold it. The flow above still records WHEN each of them happened.
+let modalContacts = [];
+// A contact is one line: star, name, title. The description is the expensive part, so it is not
+// drawn at all unless you want it: hover the name to read it, click the name to write it. Same
+// rule as the step organiser, and it takes a contact from three lines down to one.
+let openContactIdx = -1;
+function contactRowHTML(c, i) {
+  const open = openContactIdx === i;
+  const info = String(c.info || '').trim();
+  return `<div class="ct-row${i === 0 ? ' main' : ''}${open ? ' open' : ''}${info ? ' has-info' : ''}">
+    <button type="button" class="ct-star${i === 0 ? ' on' : ''}" onclick="setMainContact(${i})"
+            title="${i === 0 ? 'Main contact' : 'Make this the main contact'}">${i === 0 ? '★' : '☆'}</button>
+    <input class="ct-name" placeholder="Name" list="f-flownames" value="${escAttr(c.name || '')}"
+           title="${info ? escAttr(info) : 'Click to add a description'}"
+           onfocus="openContact(${i})" oninput="modalContacts[${i}].name=this.value">
+    <input class="ct-title" placeholder="Title" value="${escAttr(stripLink(c.title) || '')}"
+           oninput="modalContacts[${i}].title=this.value">
+    <button type="button" class="icon-btn" onclick="removeContact(${i})" title="Remove contact">🗑️</button>
+    ${open
+      ? `<textarea class="ct-info" rows="2" placeholder="Where they sit, what they own, what you already told them…"
+              oninput="modalContacts[${i}].info=this.value">${escHtml(c.info || '')}</textarea>`
+      : (info ? `<div class="ct-read">${escHtml(info)}</div>` : '')}
+  </div>`;
+}
+// Clicking (or tabbing into) a name is what opens its description, and closes anyone else's.
+function openContact(i) {
+  if (openContactIdx === i) return;
+  openContactIdx = i;
+  renderContacts();
+  const box = document.querySelectorAll('#f-contacts .ct-row')[i];
+  const nm = box && box.querySelector('.ct-name');
+  if (nm && document.activeElement !== nm) { nm.focus(); nm.setSelectionRange(nm.value.length, nm.value.length); }
+}
+function renderContacts() {
+  const host = document.getElementById('f-contacts');
+  if (host) host.innerHTML = modalContacts.length ? modalContacts.map(contactRowHTML).join('')
+    : '<div class="flow-empty">No contacts yet. Add whoever you are dealing with.</div>';
+  refreshTabCounts();
+}
+function addContact() { modalContacts.push({ name:'', title:'', info:'' }); openContactIdx = modalContacts.length - 1; renderContacts(); const b = document.querySelector('#f-contacts .ct-row.open .ct-name'); if (b) b.focus(); }
+function removeContact(i) { modalContacts.splice(i, 1); openContactIdx = -1; renderContacts(); }
+// The main contact is simply the first one, so promoting is a move, not a second flag:
+// there is no state in which two of them are starred.
+function setMainContact(i) {
+  if (i <= 0 || !modalContacts[i]) return;
+  const [c] = modalContacts.splice(i, 1);
+  modalContacts.unshift(c);
+  if (openContactIdx === i) openContactIdx = 0;        // it moved; keep it open where it landed
+  else if (openContactIdx >= 0 && openContactIdx < i) openContactIdx++;
+  renderContacts();
+}
+
+function refreshReachHint() {
+  const el = document.getElementById('f-reach-note'); if (!el) return;
+  const site = modalSteps.some(s => s.kind === 'site');
+  el.textContent = site ? 'The page you actually applied on.'
+                        : 'Fill this in when you apply on their site.';
+}
+
 function openJobModal(id) {
   editingJob = id || null;
   const j = id ? jobs.find(x => x.id === id) : {};
@@ -2430,39 +4046,118 @@ function openJobModal(id) {
   document.getElementById('f-values').value   = j.values   || '';
   document.getElementById('f-keynotes').value = j.keyNotes || '';
   document.getElementById('f-notes').value    = j.notes    || '';
-  document.getElementById('f-about').value    = j.about    || '';
-  document.getElementById('f-history').value  = j.history  || '';
-  document.getElementById('f-news').value     = j.news     || '';
+  // Company fields come from the company, not just this row, so a new role at a company
+  // you already researched opens with that research already in it.
+  const co = id ? companyInfo(j.company) : {};
+  document.getElementById('f-about').value    = j.about    || co.about   || '';
+  document.getElementById('f-history').value  = j.history  || co.history || '';
+  document.getElementById('f-news').value     = j.news     || co.news    || '';
   document.getElementById('f-salary').value    = j.salary    || '';
-  document.getElementById('f-glassdoor').value = j.glassdoor || '';
-  document.getElementById('f-indeed').value    = j.indeed    || '';
-  modalPeople = jobPeople(j).map(p => ({ name: p.name || '', title: p.title || '', info: p.info || '', primary: !!p.primary, contactedOn: p.contactedOn || '' }));
-  renderPeople();
+  document.getElementById('f-glassdoor').value = j.glassdoor || co.glassdoor || '';
+  document.getElementById('f-indeed').value    = j.indeed    || co.indeed    || '';
   document.getElementById('f-url').value       = j.url      || '';
   document.getElementById('f-dateposted').value = j.datePosted || (id ? '' : todayISO());
   document.getElementById('f-desc').value       = j.desc     || '';
   const dd = document.getElementById('f-desc-details'); if (dd) dd.open = !!(j.desc && j.desc.trim());
-  document.getElementById('f-cvurl').value      = j.cvUrl    || '';
-  document.getElementById('f-cvfile').textContent = (j.company || j.role) ? cvFilePath(j) : 'cv/…';
+  modalCv = { data: j.cvData || '', name: j.cvName || '', url: j.cvUrl || '' };
+  renderCvZone();
+  // The flow, and the two people who will actually be in the interview.
+  modalSteps = flowSteps(j).map(s => ({ kind:s.kind, who:s.who, title:s.title, label:s.label || '', on:s.on, note:s.note, par:!!s.par }));
+  openStepIdx = -1;
+  // Contacts are edited directly now. Seed from whatever the card already knows (which for
+  // older roles was derived from the flow), then the list is what gets saved.
+  const seeded = (jobPeople(j) || []);
+  modalContacts = (seeded.length ? seeded : peopleFromFlow(modalSteps, ivPerson(j.interviewHr), ivPerson(j.interviewHm)))
+    .map(p => ({ name: p.name || '', title: stripLink(p.title) || '', info: p.info || '', contactedOn: p.contactedOn || '' }));
+  renderContacts();
+  modalHr = ivPerson(j.interviewHr);
+  modalHm = ivPerson(j.interviewHm);
+  document.getElementById('f-hr-name').value  = modalHr.name;
+  document.getElementById('f-hr-title').value = modalHr.title;
+  document.getElementById('f-hr-info').value  = modalHr.info;
+  document.getElementById('f-hm-name').value  = modalHm.name;
+  document.getElementById('f-hm-title').value = modalHm.title;
+  document.getElementById('f-hm-info').value  = modalHm.info;
+  document.getElementById('f-applyurl').value  = j.applyUrl || '';
+  renderFlow();
   document.getElementById('jobModalBg').classList.add('open');
+  showJobTab('general');
   refreshMatch();
   refreshTags();
+  refreshTabCounts();
+  refreshReachHint();
+  refreshCoSharedHint();
 }
+// The "CV file:" path hint went away with the Built-CV-link field (the file itself lives on
+// the card now). Kept as a no-op because the company/role inputs still call it on every keystroke.
 function refreshCvFileHint() {
+  const el = document.getElementById('f-cvfile');
+  if (!el) return;
   const company = document.getElementById('f-company').value.trim();
   const role    = document.getElementById('f-role').value.trim();
-  document.getElementById('f-cvfile').textContent =
-    (company || role) ? cvFilePath({ company, role }) : 'cv/…';
+  el.textContent = (company || role) ? cvFilePath({ company, role }) : 'cv/…';
 }
-function closeJobModal() { document.getElementById('jobModalBg').classList.remove('open'); editingJob = null; }
-function saveJob() {
+// Closing IS saving. the user asked for it after losing edits to a stray click outside the card:
+// the X, the Close button, Escape and the backdrop all go through here. A card with no company or
+// role yet has nothing worth keeping, so that one just closes.
+function closeJobModal() {
+  const co = (document.getElementById('f-company') || {}).value || '';
+  const ro = (document.getElementById('f-role') || {}).value || '';
+  if (co.trim() && ro.trim()) { saveJob({ quiet: true }); return; }   // saveJob closes the card itself
+  dismissJobModal();
+}
+// The raw close, with nothing saved. Only for a card that has no company or role to save under.
+function dismissJobModal() {
+  document.getElementById('jobModalBg').classList.remove('open');
+  editingJob = null; openStepIdx = -1; openContactIdx = -1;
+}
+// Clicking anywhere in the card that is not a step closes the open step, and the same for a
+// contact. Without this an opened step stayed open while you worked elsewhere in the card.
+function jobModalClick(e) {
+  const t = e.target;
+  let changed = false;
+  if (openStepIdx !== -1 && !(t.closest && t.closest('.tl-item'))) { openStepIdx = -1; changed = 'flow'; }
+  if (openContactIdx !== -1 && !(t.closest && t.closest('.ct-row'))) { openContactIdx = -1; changed = changed ? 'both' : 'contacts'; }
+  if (changed === 'flow' || changed === 'both') renderFlow();
+  if (changed === 'contacts' || changed === 'both') renderContacts();
+}
+function saveJob(opts) {
+  const quiet = !!(opts && opts.quiet === true);   // a save triggered by closing, not by the button
   const company = document.getElementById('f-company').value.trim();
   const role    = document.getElementById('f-role').value.trim();
-  if (!company || !role) { alert('Company and role are required.'); return; }
-  const people = modalPeople
-    .map(p => { const o = { name: (p.name || '').trim(), title: (p.title || '').trim(), info: (p.info || '').trim() }; if (p.contactedOn) o.contactedOn = p.contactedOn; return o; })
-    .filter(p => p.name || p.title || p.info);
-  people.forEach((p, i) => { if (i === 0) p.primary = true; });   // top of the list = principal contact
+  if (!company || !role) {
+    if (quiet) { dismissJobModal(); return; }      // nothing to save it under; do not nag on close
+    alert('Company and role are required.'); return;
+  }
+  // The flow is the record. An empty row is dropped, unless its kind alone says
+  // something ("applied on their site" needs no name to be a real step).
+  const steps = sortSteps(modalSteps
+    .map(s => ({ kind: s.kind, who: (s.who || '').trim(), title: (s.title || '').trim(),
+                 label: (s.label || '').trim(),
+                 on: s.on || '', note: (s.note || '').trim(), par: !!s.par }))
+    .filter(s => s.who || s.title || s.label || s.note || s.on || ENTRY_KINDS.includes(s.kind)));
+  if (steps.length) steps[0].par = false;
+  const hr = { name: document.getElementById('f-hr-name').value.trim(),
+               title: document.getElementById('f-hr-title').value.trim(),
+               info: document.getElementById('f-hr-info').value.trim() };
+  const hm = { name: document.getElementById('f-hm-name').value.trim(),
+               title: document.getElementById('f-hm-title').value.trim(),
+               info: document.getElementById('f-hm-info').value.trim() };
+  // Contacts are edited by hand in the card now, and that list is authoritative: index 0 is
+  // the main contact (the star). Anyone in the flow who is not on the list is appended, so
+  // logging a new person as a step still surfaces them, but an edit or a removal sticks.
+  const typed = modalContacts
+    .map(c => ({ name: (c.name || '').trim(), title: (c.title || '').trim(),
+                 info: (c.info || '').trim(), contactedOn: c.contactedOn || '' }))
+    .filter(c => c.name || c.title || c.info);
+  const seen = new Set(typed.map(c => c.name.toLowerCase()).filter(Boolean));
+  const people = typed.concat(
+    peopleFromFlow(steps, hr, hm).filter(p => p.name && !seen.has(p.name.toLowerCase())));
+  // Index 0 is the main contact (the star). Stamp the flag too, the way peopleFromFlow does,
+  // so nothing that reads `primary` disagrees with what the card shows.
+  people.forEach((p, i) => { if (i === 0) p.primary = true; else delete p.primary; });
+  const entry = steps.find(s => ENTRY_KINDS.includes(s.kind));
+  const applied = steps.find(s => s.kind === 'site' && s.on);
   const data = {
     company, role,
     status:   document.getElementById('f-status').value,
@@ -2480,15 +4175,27 @@ function saveJob() {
     glassdoor: document.getElementById('f-glassdoor').value.trim(),
     indeed:    document.getElementById('f-indeed').value.trim(),
     url:      document.getElementById('f-url').value.trim(),
+    steps,
+    interviewHr: hr,
+    interviewHm: hm,
+    // Derived from the flow, kept on the job because the rest of the app still reads them.
+    contactMethod: entry ? entry.kind : '',
+    applyUrl: document.getElementById('f-applyurl').value.trim(),
     datePosted: document.getElementById('f-dateposted').value || '',
     desc:     document.getElementById('f-desc').value.trim(),
-    cvUrl:    document.getElementById('f-cvurl').value.trim(),
+    cvUrl:    modalCv.url || '',
+    cvData:   modalCv.data || '',
+    cvName:   modalCv.name || '',
   };
+  const startedOn = applied ? applied.on : processStart({}, steps);
+  if (startedOn) data.appliedOn = startedOn;
   let savedJob;
   if (editingJob) { savedJob = jobs.find(x => x.id === editingJob); Object.assign(savedJob, data); }
   else { savedJob = { id: nextJobId++, ...data }; jobs.push(savedJob); }
-  saveState(); closeJobModal(); buildJobList();
-  maybePromptContact(savedJob);
+  // Keep every role at this company telling the same story about the company.
+  applyCompanyInfo(company, data, savedJob.id);
+  saveState(); dismissJobModal(); buildJobList();
+  if (!quiet) maybePromptContact(savedJob);
 }
 function deleteJob(id) {
   if (!confirm('Remove this role?')) return;
@@ -2534,6 +4241,8 @@ const EXPERIENCES = [
 ];
 
 let invQuery = '', invSkill = null, editingExp = null;
+let invOrg = null;      // one company at a time: "where did I do this"
+let invStar = false;    // only the ones he leads with
 
 function expWhen(x) {
   const fmt = m => { if (!m) return ''; const [y, mo] = m.split('-'); return mo ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1] + ' ' + y : y; };
@@ -2570,13 +4279,21 @@ function deleteExperience(e, id) {
   experiences = experiences.filter(v => v.id !== id);
   saveState(); buildInventory();
 }
+// Skills are matched case-insensitively but SHOWN the way he typed them: the filter used to
+// render every skill lowercased, and `setInvSkill` stored the raw label while `matchesInv`
+// compared a lowercased one, so clicking any capitalised skill filtered the log down to nothing.
 function allExpSkills() {
   const seen = {};
-  experiences.forEach(x => expSkills(x).forEach(sk => { const k = sk.toLowerCase(); seen[k] = (seen[k] || 0) + 1; }));
-  return Object.keys(seen).sort((a, b) => seen[b] - seen[a] || a.localeCompare(b)).map(k => ({ skill: k, n: seen[k] }));
+  experiences.forEach(x => expSkills(x).forEach(sk => {
+    const k = String(sk).toLowerCase();
+    (seen[k] = seen[k] || { skill: k, label: sk, n: 0 }).n++;
+  }));
+  return Object.values(seen).sort((a, b) => b.n - a.n || a.skill.localeCompare(b.skill));
 }
-function setInvSkill(sk) { invSkill = (invSkill === sk) ? null : sk; buildInventory(); }
+function setInvSkill(sk) { const k = String(sk || '').toLowerCase(); invSkill = (invSkill === k ? null : k); buildInventory(); }
 function matchesInv(x) {
+  if (invStar && !x.star) return false;
+  if (invOrg && String(x.org || '').trim().toLowerCase() !== invOrg) return false;
   if (invSkill && !expSkills(x).some(s => s.toLowerCase() === invSkill)) return false;
   const q = invQuery.trim().toLowerCase();
   if (!q) return true;
@@ -2585,41 +4302,109 @@ function matchesInv(x) {
 }
 function expCardHTML(x) {
   const when = expWhen(x);
-  const sub = [x.org, x.role].filter(Boolean).join(' · ');
-  const chips = expSkills(x).slice(0, 8).map(sk => `<span class="jc-chip">${escHtml(sk)}</span>`).join('');
-  const line = x.result || x.action || '';
-  return `<div class="exp-card${x.star ? ' star' : ''}" onclick="openExpModal(${x.id})">
-    <div class="exp-top">
-      <div class="exp-title">${escHtml(x.title || '(untitled)')}</div>
-      ${when ? `<span class="exp-when">${escHtml(when)}</span>` : ''}
+  const desc = x.result || x.action || x.situation || x.notes || '';
+  const chips = expSkills(x).slice(0, 6).map(sk => `<span class="jc-chip">${escHtml(sk)}</span>`).join('');
+  const co = String(x.org || '').trim();
+  return `<div class="exp-row${x.star ? ' star' : ''}" onclick="openExpModal(${x.id})">
+    <span class="exp-date">${escHtml(when || 'no date')}</span>
+    <div class="exp-main">
+      <div class="exp-line">
+        <span class="exp-title">${escHtml(x.title || '(untitled)')}</span>
+        ${x.metric ? `<span class="exp-metric">${escHtml(x.metric)}</span>` : ''}
+        ${co ? `<span class="exp-co">${escHtml(co)}</span>` : ''}
+        ${x.role ? `<span class="exp-role">${escHtml(x.role)}</span>` : ''}
+      </div>
+      ${desc ? `<div class="exp-desc">${escHtml(desc)}</div>` : ''}
+      ${chips ? `<div class="exp-chips">${chips}</div>` : ''}
     </div>
-    ${sub ? `<div class="exp-org">${escHtml(sub)}</div>` : ''}
-    ${line ? `<div class="exp-result">${escHtml(line)}${x.metric ? ` <span class="exp-metric">${escHtml(x.metric)}</span>` : ''}</div>` : ''}
-    ${chips ? `<div class="exp-chips">${chips}</div>` : ''}
-    <div class="exp-actions">
-      <button class="icon-btn flag-btn${x.star ? ' on' : ''}" onclick="toggleExpStar(event,${x.id})" title="Star - your strongest stories">${x.star ? '⭐' : '☆'}</button>
-      <button class="icon-btn" onclick="copyBullet(event,${x.id})" title="Copy as a CV line">📋</button>
-      <button class="icon-btn" onclick="deleteExperience(event,${x.id})" title="Delete">🗑️</button>
-    </div>
+    <span class="exp-actions">
+      <button class="icon-btn flag-btn${x.star ? ' on' : ''}" onclick="toggleExpStar(event,${x.id})" title="Star - your strongest stories">${x.star ? '\u2b50' : '\u2606'}</button>
+      <button class="icon-btn" onclick="copyBullet(event,${x.id})" title="Copy as a CV line">\ud83d\udccb</button>
+      <button class="icon-btn" onclick="deleteExperience(event,${x.id})" title="Delete">\ud83d\uddd1\ufe0f</button>
+    </span>
   </div>`;
 }
+// Companies, with a count each, ordered by how much of his record sits there.
+function allExpOrgs() {
+  const map = {};
+  experiences.forEach(x => {
+    const o = String(x.org || '').trim();
+    if (!o) return;
+    const k = o.toLowerCase();
+    (map[k] = map[k] || { org: o, n: 0 }).n++;
+  });
+  return Object.values(map).sort((a, b) => b.n - a.n || a.org.localeCompare(b.org));
+}
+function setInvOrg(v) { const k = String(v || '').toLowerCase(); invOrg = (invOrg === k ? null : k); buildInventory(); }
+function toggleInvStar() { invStar = !invStar; buildInventory(); }
+function clearInvFilters() {
+  invOrg = null; invSkill = null; invStar = false;
+  const q = document.getElementById('inv-q'); if (q) q.value = '';
+  invQuery = '';
+  buildInventory();
+}
+// What is switched on right now, said out loud. The research is blunt about this: people forget
+// what they filtered by, and a filter you cannot see is a filter you cannot undo.
+function activeFilterChips() {
+  const chips = [];
+  if (invStar) chips.push(`<button class="fchip" onclick="toggleInvStar()" title="Remove this filter">\u2b50 Starred <span class="fx">\u00d7</span></button>`);
+  if (invOrg) {
+    const o = (allExpOrgs().find(x => x.org.toLowerCase() === invOrg) || {}).org || invOrg;
+    chips.push(`<button class="fchip" onclick="setInvOrg('${escAttr(o)}')" title="Remove this filter">${escHtml(o)} <span class="fx">\u00d7</span></button>`);
+  }
+  if (invSkill) {
+    const sk = (allExpSkills().find(x => x.skill === invSkill) || {}).label || invSkill;
+    chips.push(`<button class="fchip" onclick="setInvSkill('${escAttr(sk)}')" title="Remove this filter">${escHtml(sk)} <span class="fx">\u00d7</span></button>`);
+  }
+  const q = (invQuery || '').trim();
+  if (q) chips.push(`<button class="fchip" onclick="clearInvSearch()" title="Clear the search">\u201c${escHtml(q)}\u201d <span class="fx">\u00d7</span></button>`);
+  if (!chips.length) return '';
+  return `<div class="inv-active"><span class="ia-lbl">Filtering by</span>${chips.join('')}`
+       + `<button class="fclear" onclick="clearInvFilters()">Clear all</button></div>`;
+}
+function clearInvSearch() { const q = document.getElementById('inv-q'); if (q) q.value = ''; invQuery = ''; buildInventory(); }
+
 function buildInventory() {
   const host = document.getElementById('invList'); if (!host) return;
+  const guide = document.getElementById('invGuide');
+  if (guide) { try { guide.open = localStorage.getItem('jobs_inv_guide') !== '0'; } catch (e) { guide.open = true; } }
   const q = document.getElementById('inv-q');
   invQuery = q ? q.value : '';
+
+  const orgs = allExpOrgs();
   const skills = allExpSkills();
+  const starN = experiences.filter(x => x.star).length;
   const fh = document.getElementById('invFilters');
-  if (fh) fh.innerHTML = skills.length
-    ? skills.map(s => `<button class="inv-filter${invSkill === s.skill ? ' on' : ''}" onclick="setInvSkill('${escAttr(s.skill)}')">${escHtml(s.skill)} <span class="inv-count">${s.n}</span></button>`).join('')
-    : '';
+  if (fh) {
+    const orgRow = orgs.length ? `<div class="frow"><span class="frow-lbl">Company</span><div class="frow-chips">`
+      + orgs.map(o => `<button class="inv-filter${invOrg === o.org.toLowerCase() ? ' on' : ''}" onclick="setInvOrg('${escAttr(o.org)}')">${escHtml(o.org)} <span class="inv-count">${o.n}</span></button>`).join('')
+      + `</div></div>` : '';
+    const skillRow = skills.length ? `<div class="frow"><span class="frow-lbl">Skill</span><div class="frow-chips">`
+      + skills.map(k => `<button class="inv-filter${invSkill === k.skill ? ' on' : ''}" onclick="setInvSkill('${escAttr(k.label)}')">${escHtml(k.label)} <span class="inv-count">${k.n}</span></button>`).join('')
+      + `</div></div>` : '';
+    const starRow = starN ? `<div class="frow"><span class="frow-lbl">Only</span><div class="frow-chips">`
+      + `<button class="inv-filter star-filter${invStar ? ' on' : ''}" onclick="toggleInvStar()">\u2b50 Starred <span class="inv-count">${starN}</span></button>`
+      + `</div></div>` : '';
+    fh.innerHTML = orgRow + skillRow + starRow + activeFilterChips();
+  }
+
   const list = experiences.filter(matchesInv).sort((a, b) =>
     (b.star ? 1 : 0) - (a.star ? 1 : 0) || String(b.end || b.start || '').localeCompare(String(a.end || a.start || '')) || (b.id || 0) - (a.id || 0));
+  const cnt = document.getElementById('invCount');
+  if (cnt) cnt.textContent = experiences.length
+    ? (list.length === experiences.length ? experiences.length + ' experiences'
+                                          : list.length + ' of ' + experiences.length)
+    : '';
   host.innerHTML = list.length
     ? list.map(expCardHTML).join('')
     : `<div class="inv-empty">${experiences.length
-        ? 'Nothing matches that.'
-        : 'Nothing here yet. Add the things you are proudest of - one card each - and they become your CV lines and interview answers.'}</div>`;
+        ? 'Nothing matches that. <button class="link-btn" onclick="clearInvFilters()">Clear the filters</button>'
+        : 'Nothing here yet. Add the things you are proudest of - one row each - and they become your CV lines and interview answers.'}</div>`;
 }
+
+// The brief stays open or shut the way you left it.
+function rememberGuide(el) { try { writeLS('jobs_inv_guide', el.open ? '1' : '0'); } catch (e) {} }
+
 function refreshSkillPrev() {
   const host = document.getElementById('x-skillprev'); if (!host) return;
   const list = (document.getElementById('x-skills').value || '').split(',').map(v => v.trim()).filter(Boolean);
@@ -2691,8 +4476,22 @@ function outsideSettings(e) {
 }
 
 // ── Misc ──
+// Escape closes the job card the same way a click outside does: by saving it.
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  const bg = document.getElementById('jobModalBg');
+  if (!bg || !bg.classList.contains('open')) return;
+  if (openStepIdx !== -1 || openContactIdx !== -1) {   // first Escape closes what is open inside
+    openStepIdx = -1; openContactIdx = -1; renderFlow(); renderContacts(); return;
+  }
+  closeJobModal();
+});
 [ 'jobModalBg','contactModalBg','findModalBg','expModalBg' ].forEach(id => {
-  document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) this.classList.remove('open'); });
+  document.getElementById(id).addEventListener('click', function(e){
+    if (e.target !== this) return;
+    // Clicking outside the JOB card saves it (that is where the work is); the other modals just close.
+    if (id === 'jobModalBg') closeJobModal(); else this.classList.remove('open');
+  });
 });
 
 // ── Cloud sync (Supabase) ──
@@ -2701,6 +4500,9 @@ function outsideSettings(e) {
 // works, on this device only, and says so.
 const SUPABASE_URL = '';   // add your own to turn on accounts + cloud sync
 const SUPABASE_KEY = '';   // see SETUP.md
+// The Supabase lib is a CDN <script>. Blocked (tracking prevention, offline, jsdelivr down) it is
+// simply absent, and without this guard the whole app script died on this line: no functions, dead
+// buttons, empty board. Absent lib now just means local-only.
 // No keys -> demo mode: no login, everything stays in this browser.
 const DEMO_MODE = !SUPABASE_URL || !SUPABASE_KEY;
 const sb = DEMO_MODE ? null : window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2709,6 +4511,14 @@ let currentUser = null;
 let pushTimer = null;
 let cloudUpdatedAt = null;   // updated_at we last saw, for conflict awareness
 let lastSnapshotTs = 0;      // throttle checkpoint snapshots
+let cloudReady = false;      // no pushing until the first cloud pull has settled
+
+// Any cloud call can hang forever (a stalled socket never rejects). Bound it, so a bad network
+// degrades to "Offline" instead of leaving the board blank behind a hidden login overlay.
+function withTimeout(p, ms, label) {
+  return Promise.race([p, new Promise((_, rej) =>
+    setTimeout(() => rej(new Error((label || 'cloud') + ' timed out')), ms))]);
+}
 
 function setSync(text) { const el = document.getElementById('syncBadge'); if (el) el.textContent = text; }
 function renderAll() { buildJobList(); buildInventory(); }
@@ -2734,7 +4544,11 @@ async function pushToCloudNow() {
   let conflict = false;
   try {   // another device wrote since we last synced? snapshot the cloud first so nothing is lost
     const { data: cur } = await sb.from('job_state').select('updated_at').eq('user_id', currentUser.id).maybeSingle();
-    if (cur && cur.updated_at && cloudUpdatedAt && cur.updated_at > cloudUpdatedAt) { conflict = true; await snapshotNow(); }
+    // Newer than what we pulled, OR we never managed to pull at all (offline start, timed-out
+    // load): either way the cloud holds something we have not seen, so snapshot it before we
+    // overwrite it. Without the !cloudUpdatedAt half, a failed load could push a seed board
+    // over the real one with no way back.
+    if (cur && cur.updated_at && (!cloudUpdatedAt || cur.updated_at > cloudUpdatedAt)) { conflict = true; await snapshotNow(); }
   } catch (e) {}
   const nowIso = new Date().toISOString();
   const { error } = await sb.from('job_state').upsert({ user_id: currentUser.id, data: payload, updated_at: nowIso });
@@ -2744,7 +4558,9 @@ async function pushToCloudNow() {
   maybeSnapshot();
 }
 function schedulePush() {
-  if (!currentUser) return;
+  // cloudReady: never push before the first pull settled, or the local seed would overwrite the
+  // real board in the cloud while the pull is still in flight.
+  if (!currentUser || !cloudReady) return;
   clearTimeout(pushTimer);
   setSync('Saving...');
   pushTimer = setTimeout(() => pushToCloudNow().catch(() => setSync('Offline')), 2000);
@@ -2752,11 +4568,13 @@ function schedulePush() {
 
 async function loadFromCloud() {
   try {
-    const { data, error } = await sb.from('job_state').select('data, updated_at').eq('user_id', currentUser.id).maybeSingle();
+    const { data, error } = await withTimeout(
+      sb.from('job_state').select('data, updated_at').eq('user_id', currentUser.id).maybeSingle(),
+      10000, 'cloud load');
     if (error) throw error;
     if (data && data.data && Array.isArray(data.data.jobs) && data.data.jobs.length) {
       cloudUpdatedAt = data.updated_at || null;
-      localStorage.setItem(LS_STATE, JSON.stringify(data.data)); // cloud -> local cache
+      writeLS(LS_STATE, JSON.stringify(data.data)); // cloud -> local cache (quota-safe)
       loadState();
       setSync('Synced');
       lastSnapshotTs = Date.now(); snapshotNow();
@@ -2766,9 +4584,11 @@ async function loadFromCloud() {
 
     }
   } catch (e) {
-    loadState();               // offline / table missing: fall back to the local cache
+    loadState();               // offline / table missing / timed out: fall back to the local cache
     setSync('Offline');
     toast('Cloud not reachable - working on this device only');
+  } finally {
+    cloudReady = true;         // pushes are safe from here on, whichever branch we took
   }
 }
 
@@ -2800,6 +4620,9 @@ async function restoreSnapshot(id) {
 
 async function startApp() {
   document.getElementById('authOverlay').style.display = 'none';
+  // Draw the board from the local cache FIRST. Everything below is a network call, and hiding the
+  // overlay before awaiting it is what made a slow or stalled cloud look like an empty app.
+  try { loadState(); renderAll(); } catch (e) { console.error('local load failed', e); }
   await loadFromCloud();
   renderAll();
 }
@@ -2837,13 +4660,15 @@ document.getElementById('auth-pass').addEventListener('keydown', function(e){ if
 
 // ── Init ──
 (async () => {
-  if (DEMO_MODE) {                 // no keys: skip the login wall, run on localStorage
-    document.getElementById('authOverlay').style.display = 'none';
-    loadState(); renderAll();
-    return;
+  // No cloud library at all: go straight to the local board rather than sitting on a dead login box.
+  if (!sb) { useLocalOnly(); setSync('Local'); toast('Cloud library did not load - this device only'); return; }
+  try {
+    const { data } = await withTimeout(sb.auth.getSession(), 8000, 'session');
+    if (data && data.session) { currentUser = data.session.user; await startApp(); }
+  } catch (e) {
+    // Session check failed or hung: leave the login overlay up so he can log in or skip.
+    console.error('session check failed', e);
   }
-  const { data } = await sb.auth.getSession();
-  if (data.session) { currentUser = data.session.user; await startApp(); }
 })();
 </script>
 </body>
