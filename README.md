@@ -8,7 +8,7 @@ are invented, and anything you change stays in your own browser.
 
 ---
 
-## The two pages
+## The pages
 
 The left rail has one icon per page. Hover an icon to see its name.
 
@@ -27,8 +27,10 @@ Every role you are chasing, in one board.
   three ways: how much of what they ask for you actually have, whether the seniority matches, and
   whether the role and industry are your kind of work. Hover it for the breakdown and the list of
   what you are missing.
-- **Contacts per role**, in order: the person at the top is your principal contact and shows with a
-  star. Moving a role to *Applied* asks who you contacted and when, so a follow-up is never lost.
+- **The story of each application, step by step**: applied online, a cold message, a referral, a
+  reply, a screen, each interview - who it was with and when. The card knows whose move it is.
+- **What you have been doing**: the strip at the top lists every step of the last days, one chip per
+  company, so a quiet week is visible.
 - **What the job offers**, not what it demands: the chips on a card are work mode, location, salary
   and the perks worth knowing about.
 - **Notes, posting link, full description, dates**, and an archive drawer for the roles you drop.
@@ -70,6 +72,31 @@ What having it gives you:
 
 Nothing here is generated for you. The inventory is what *you* did; the app makes it reusable.
 
+### 3. Strategy - is the search working?
+
+![the strategy dashboard](docs/screenshot-strategy.png)
+
+- **The funnel, computed off the board**: approached, answered, screened, interviewed, second round,
+  offer, with the conversion between each. Hover a stage for who is in it.
+- **Channels**: which way in (applying online, cold messages, referrals, recruiters) actually led to
+  interviews, so effort goes where it converts.
+- **Your own read of the search** around it - the target, what is leaking, what works, the next moves
+  and the rules you hold yourself to - plus a **hiring calendar** marking the strong and dead windows
+  of the year.
+
+### 4. Who can land it - the network
+
+![the network queue](docs/screenshot-network.png)
+
+A job hunt is won through people. This page keeps them:
+
+- **Write next**: a queue, not a contact list. One person at a time, with **why they matter and what
+  to ask**; mark it sent or archive it and the next name moves up.
+- **Tiers**: live threads first, then ex-colleagues, people inside target companies, product managers,
+  alumni, recruiters.
+- **Every route in**, grouped by the kind of role, and **drafted messages** that respect who you are
+  writing to: an employee gets an advice request with no job ask, a recruiter can be offered the CV.
+
 ---
 
 ## Under the hood
@@ -91,7 +118,7 @@ Small, separate apps that share a look but nothing else - separate data, separat
 | Task Tracker | https://github.com/DereckCB/task-tracker |
 | Job Search | this one |
 | Trip Planner | https://github.com/DereckCB/trip-planner |
-| Household Budget | https://github.com/DereckCB/budget |
+| Household Budget | https://github.com/DereckCB/household-budget |
 
 ## License
 

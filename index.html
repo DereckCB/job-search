@@ -1939,7 +1939,45 @@ const INITIAL_JOBS = [
   { id:10, company:'Northwind Devices', role:'Senior Product Owner, Firmware', status:'Saved', priority:'Low',
     url:'', datePosted:'2026-07-17',
     notes:'Montreal, QC (Hybrid). A second Northwind role - folds under one company card in the Saved log (see the Hidden drawer). Flag a role to choose which one shows.' },
-];const SEED = 'v55';
+];const dIn = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const DEMO_STEPS = {
+  1: [ { kind:'cold', on:dIn(-12), who:'Jordan Lee', title:'Talent Acquisition Partner', label:'Message on LinkedIn, mutual connection' },
+       { kind:'reply', on:dIn(-10), who:'Jordan Lee', title:'Talent Acquisition Partner', label:'Asked for my CV' },
+       { kind:'cv', on:dIn(-10), who:'Jordan Lee', title:'Talent Acquisition Partner', label:'CV sent' },
+       { kind:'site', on:dIn(-9), label:'Applied on their careers page' },
+       { kind:'screen', on:dIn(-3), who:'Jordan Lee', title:'Talent Acquisition Partner', label:'30-minute phone screen' } ],
+  2: [ { kind:'site', on:dIn(-20), label:'Applied online' },
+       { kind:'screen', on:dIn(-13), who:'Sam Rivera', title:'Senior Recruiter', label:'Recruiter screen' },
+       { kind:'interview', on:dIn(-6), who:'Ella Fischer', title:'Head of Product', label:'First interview' } ],
+  3: [ { kind:'referral', on:dIn(-30), who:'Maya Chen', title:'Engineering Manager', label:'Intro from a former colleague' },
+       { kind:'screen', on:dIn(-24), who:'Daniel Okafor', title:'Talent Partner', label:'Recruiter screen' },
+       { kind:'interview', on:dIn(-15), who:'Maya Chen', title:'Engineering Manager', label:'First interview' },
+       { kind:'interview', on:dIn(-4), who:'Panel', title:'Product, engineering, ops', label:'Second round, panel' } ],
+  4: [ { kind:'inbound', on:dIn(-5), who:'Alex Moreau', title:'Recruiter', label:'Recruiter reached out' },
+       { kind:'reply', on:dIn(-4), who:'Alex Moreau', title:'Recruiter', label:'Replied, sent CV' } ],
+  5: [ { kind:'site', on:dIn(-2), label:'Applied online' } ],
+  6: [ { kind:'site', on:dIn(-26), label:'Applied online' },
+       { kind:'followup', on:dIn(-12), label:'Follow-up to the hiring team' } ],
+  8: [ { kind:'site', on:dIn(-40), label:'Applied online' },
+       { kind:'interview', on:dIn(-28), who:'Grace Kim', title:'Engineering Manager', label:'First interview' },
+       { kind:'interview', on:dIn(-15), who:'Panel', title:'Leadership', label:'Final round' } ],
+  9: [ { kind:'site', on:dIn(-35), label:'Applied online' },
+       { kind:'interview', on:dIn(-20), who:'Lucia Ferreira', title:'Senior Product Owner', label:'First interview' } ],
+};
+const DEMO_STATUS = { 1:'Waiting 1st interview', 2:'Waiting 2nd interview', 3:'Waiting 2nd result', 4:'Applied', 5:'Applied', 6:'No answer' };
+{
+
+  const shift = Math.round((new Date(dIn(0)) - new Date('2026-07-20')) / 86400000);
+  const move = v => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? (d => { d.setDate(d.getDate() + shift); return d.toISOString().slice(0, 10); })(new Date(v + 'T12:00:00')) : v;
+  INITIAL_JOBS.forEach(j => {
+    ['datePosted', 'appliedOn'].forEach(k => { if (j[k]) j[k] = move(j[k]); });
+    (j.people || []).forEach(p => { if (p.contactedOn) p.contactedOn = move(p.contactedOn); });
+    if (DEMO_STATUS[j.id]) j.status = DEMO_STATUS[j.id];
+    if (j.id === 7) j.priority = 'High';
+    if (DEMO_STEPS[j.id] && !(j.steps && j.steps.length)) j.steps = DEMO_STEPS[j.id];
+  });
+}
+const SEED = 'v55';
 
 const STATUS_ORDER = ['Saved','Applied','Waiting 1st interview','Waiting 1st result','Waiting 2nd interview','Waiting 2nd result','Offer','No answer','Rejected'];
 const STATUS_CLASS = { 'No answer':'s-noanswer', 'Saved':'s-saved','Applied':'s-applied','Waiting 1st interview':'s-wait-int','Waiting 1st result':'s-wait-res','Waiting 2nd interview':'s-wait-int','Waiting 2nd result':'s-wait-res','Offer':'s-offer','Rejected':'s-rejected' };
@@ -2044,9 +2082,9 @@ const NET_TIERS = [
   { id:'colleague', label:'Ex-colleague', rank:1, ask:'advice' },
   { id:'door',      label:'Inside a target', rank:2, ask:'advice' },
   { id:'pm',        label:'Product manager', rank:3, ask:'advice' },
-  { id:'pmo',       label:'Doing rung 3 now', rank:4, ask:'advice' },
-  { id:'rail',      label:'Rail / transit', rank:5, ask:'advice' },
-  { id:'alumni',    label:'ETS / school', rank:6, ask:'advice' },
+  { id:'pmo',       label:'Programme managers', rank:4, ask:'advice' },
+  { id:'rail',      label:'Industry peers', rank:5, ask:'advice' },
+  { id:'alumni',    label:'Alumni / school', rank:6, ask:'advice' },
   { id:'recruiter', label:'Recruiter', rank:7, ask:'recruiter' },
   { id:'wider',     label:'Wider network', rank:9, ask:'advice' },
 ];
@@ -2058,7 +2096,32 @@ const NET_STATUS = [
   { id:'closed',  label:'Parked' },
 ];
 
-const NET_SEED = [];
+const NET_SEED = [
+  { n:'Priya Nair', t:'Product Manager, Platform', o:'Nimbus Robotics', k:'pm', s:'todo', star:true, pin:true,
+    w:'Closest person to the target role: engineer turned platform PM, same industry.', a:'20 minutes of advice: how she made the move and what a panel probes.' },
+  { n:'Jordan Lee', t:'Talent Acquisition Partner', o:'Nimbus Robotics', k:'live', s:'talking',
+    w:'Live thread: ran the phone screen and is waiting on the hiring manager.', a:'Ask for the next step and the timeline.' },
+  { n:'Maya Chen', t:'Engineering Manager', o:'Northwind Devices', k:'colleague', s:'replied', star:true,
+    w:'Former colleague who made the intro. Knows the final-round panel.', a:'What did the panel want to hear that it did not?' },
+  { n:'Daniel Okafor', t:'Talent Partner', o:'Northwind Devices', k:'recruiter', s:'written',
+    w:'Recruiter on the second round.', a:'Feedback on the final round, and other open roles.' },
+  { n:'Tom Brennan', t:'Program Director', o:'Atlas Manufacturing', k:'pmo', s:'todo',
+    w:'Runs the programme office. Delivery framing fits here.', a:'How programme managers move into product at Atlas.' },
+  { n:'Grace Kim', t:'Engineering Manager', o:'Helios Energy', k:'door', s:'written',
+    w:'Inside a target company, interviewed last month.', a:'Is there an internal track from engineering to product?' },
+  { n:'Lucia Ferreira', t:'Senior Product Owner', o:'Beacon Retail Systems', k:'pm', s:'todo',
+    w:'Product owner in IoT for retail.', a:'Advice on moving into software-heavy products.' },
+  { n:'Alex Moreau', t:'Recruiter', o:'Brightpath Talent', k:'recruiter', s:'replied',
+    w:'Agency recruiter who reached out first.', a:'Share the target: hardware product roles only.' },
+  { n:'Chris Walsh', t:'Senior Mechanical Engineer', o:'Solstice Sensors', k:'colleague', s:'todo',
+    w:'Worked together on the sensor launch.', a:'Catch up, and who else he knows in product.' },
+  { n:'Nina Petrova', t:'Product Manager', o:'Meridian Hardware', k:'alumni', s:'todo',
+    w:'Same engineering school, now a PM.', a:'Alumni advice call.' },
+  { n:'Omar Haddad', t:'Operations Lead', o:'Corvus Automation', k:'rail', s:'closed',
+    w:'Industry peer from the automation meetup.', a:'Parked until the next meetup.' },
+  { n:'Ella Fischer', t:'Head of Product', o:'Volta EV', k:'door', s:'todo', star:true,
+    w:'Owns the role that went on hold.', a:'A warm note asking what else the team plans to hire for.' },
+];
 
 const NET_WIDER = [];
 
