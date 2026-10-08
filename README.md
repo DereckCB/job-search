@@ -12,90 +12,64 @@ are invented, and anything you change stays in your own browser.
 
 The left rail has one icon per page. Hover an icon to see its name.
 
-### 1. Job Tracker - the pipeline
+### 1. Jobs - the pipeline
 
-![the job board](docs/screenshot.png)
+![the job tracker](docs/screenshot.png)
 
-Every role you are chasing, in one board.
+Every company you are chasing in one list, and the one you pick opened on the right.
 
-- **Kanban by stage** across the top: Applied, Interviewing, Awaiting result, Offer, with Rejected
-  collapsed to a strip on the right so it stays out of the way. Drag a card to move it along.
-- **Saved backlog** underneath: roles you found but have not applied to yet, **grouped by company**.
-  If a company has three openings you get one card with a `+2` badge instead of three rows; flag the
-  one that best represents the company and it becomes the card you see.
-- **Fit score** - the coloured percentage on each card. It compares the posting against your skills
-  three ways: how much of what they ask for you actually have, whether the seniority matches, and
-  whether the role and industry are your kind of work. Hover it for the breakdown and the list of
-  what you are missing.
-- **The story of each application, step by step**: applied online, a cold message, a referral, a
-  reply, a screen, each interview - who it was with and when. The card knows whose move it is.
-- **What you have been doing**: the strip at the top lists every step of the last days, one chip per
-  company, so a quiet week is visible.
-- **What the job offers**, not what it demands: the chips on a card are work mode, location, salary
-  and the perks worth knowing about.
-- **Notes, posting link, full description, dates**, and an archive drawer for the roles you drop.
-- **Find roles**: an optional web search for new openings that fit, run through your own LLM API key
-  (kept in your browser only), or copy the research prompt and run it wherever you like.
+- **One row per company**, with its live state (applied, waiting on a first or second interview,
+  offer, no answer, rejected). Several openings at the same company stay under one row.
+- **The card**: state, **fit score**, pay, where and how you would work, how long since the last move,
+  and the CV you sent. Tabs for the **company**, the **people** you know there and **interview** prep.
+- **The history of each application, step by step**: applied online, a message, a referral, a call,
+  each interview, who it was with and when. When nothing has moved for a while it says so: follow
+  up, or close it.
 
-### 2. Experience Inventory - your master CV
+### 2. People - who can land it
 
-![the experience inventory](docs/screenshot-experience.png)
+![the people page](docs/screenshot-network.png)
 
-**This is what makes the tailoring possible.** Instead of one CV file you keep editing into
-oblivion, you keep a **library of everything you have actually done** - one card per project,
-achievement or piece of work - and assemble a CV per application out of it.
+A job hunt is won through people. This page is a queue, not a contact list:
 
-Each entry holds:
+- **To write**: one person at a time, with **why them** and **the ask**. Copy a drafted message, mark
+  it written, archive it, and the next name moves up.
+- **Groups**: live threads, ex-colleagues, people inside a target company, product managers, alumni,
+  recruiters. **Routes** shows every way into each company.
+- Each person links to the roles you track at their company.
 
-| Field | Why it is there |
-|---|---|
-| Headline | what you did, in one line |
-| Where and when | company or project, your role, the months |
-| **Situation, Task, Action, Result** | the STAR story, written properly once |
-| **Impact metric** | the number that proves it (`-18% scrap`, `6 weeks -> 2 weeks`) |
-| **Skills it proves** | tags that make it findable - they become the filters |
-| Notes | where the proof is, numbers to double-check, who else was involved |
+### 3. Me - the career vault
 
-What having it gives you:
+![the career vault](docs/screenshot-experience.png)
 
-- **Search and filter by skill.** A posting wants supplier negotiation and roadmap work? Filter by
-  those tags and you are looking at exactly the experiences worth putting on that CV.
-- **Star your strongest** - they sort to the top, so what you lead with is always at hand.
-- **Copy a CV line** from any card in one click. It comes out result-first with the metric in
-  parentheses, the way a bullet should read, ready to paste.
-- **Build a tailored CV per posting.** From a job card, the CV button assembles a prompt combining
-  the role, its description and your inventory, and hands it to whichever AI assistant you use.
-  **The rules are yours**: what to emphasise, what to leave out, tone, length, how many bullets per
-  role. Set them once and every CV comes out consistent instead of improvised.
-- **It doubles as interview prep.** The STAR fields are your answer to "tell me about a time when",
-  written while you still remembered the details.
+**This is what makes tailoring a CV possible.** Instead of one CV you keep editing, you keep a
+**library of everything you have actually done**, one note per story, and build each CV out of it.
 
-Nothing here is generated for you. The inventory is what *you* did; the app makes it reusable.
+- Each story holds the company, your role, the dates, **what happened, the task, what you did and
+  what came of it**, the number that proves it, and tags.
+- Stories sort into folders (management, product, engineering, training) and link to each other by
+  shared tags. **Star** the strongest ones.
+- **Career** lists every role with what you did there; **CVs** shows which CV went where.
+- **Copy as CV line** turns a story into a bullet, result first. The master CV stays the source of truth.
 
-### 3. Strategy - is the search working?
+### 4. Overview - is the search working?
 
-![the strategy dashboard](docs/screenshot-strategy.png)
+![the overview](docs/screenshot-strategy.png)
 
-- **The funnel, computed off the board**: approached, answered, screened, interviewed, second round,
-  offer, with the conversion between each. Hover a stage for who is in it.
-- **Channels**: which way in (applying online, cold messages, referrals, recruiters) actually led to
-  interviews, so effort goes where it converts.
-- **Your own read of the search** around it - the target, what is leaking, what works, the next moves
-  and the rules you hold yourself to - plus a **hiring calendar** marking the strong and dead windows
-  of the year.
+- **Mission**: the one-line goal, what you are looking for, the target roles in order, a **hiring
+  calendar** marking the strong and dead windows of the year, your rules, and the **history** of every
+  move across the whole board.
+- **My story**: the one-liner, three proofs and the objection you always get, all editable.
+- **What works**: the **funnel** computed off the board, which **channels** led somewhere, what is
+  leaking, what is working and what is not.
 
-### 4. Who can land it - the network
+### 5. Job Board - new roles, scanned for you
 
-![the network queue](docs/screenshot-network.png)
-
-A job hunt is won through people. This page keeps them:
-
-- **Write next**: a queue, not a contact list. One person at a time, with **why they matter and what
-  to ask**; mark it sent or archive it and the next name moves up.
-- **Tiers**: live threads first, then ex-colleagues, people inside target companies, product managers,
-  alumni, recruiters.
-- **Every route in**, grouped by the kind of role, and **drafted messages** that respect who you are
-  writing to: an employee gets an advice request with no job ask, a recruiter can be offered the CV.
+A live scan of public career sites (Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Workable)
+and remote job boards, plus Adzuna once you add your own free keys. Every posting is **scored against
+your record**: title, place, level and the gaps it would expose. Filter by role, where and when it was
+posted, dismiss what is not for you, and save the good ones straight onto the Jobs page. Add any
+company by pasting its careers page link.
 
 ---
 
@@ -103,7 +77,7 @@ A job hunt is won through people. This page keeps them:
 
 - One HTML file. Open it and it runs - no install, no server, no network needed.
 - Everything saves to your browser under `jobs_state`. Settings has a JSON **Backup** and
-  **Restore**, and a rolling ring of the last 15 states as a safety net.
+  **Restore**, and a rolling ring of the last states as a safety net.
 - Optional: add Supabase keys at the top of the script and it switches on accounts, cross-device
   sync and versioned history. Without keys it stays in demo mode - no login, no network. See
   `SETUP.md`.
